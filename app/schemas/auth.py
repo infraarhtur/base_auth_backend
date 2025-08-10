@@ -48,7 +48,8 @@ class RefreshRequest(BaseSchema):
 class LogoutRequest(BaseSchema):
     """Esquema para solicitud de logout"""
     
-    refresh_token: Optional[str] = Field(None, description="Token de refresco a invalidar")
+    refresh_token: str = Field(..., description="Token de refresco a invalidar")
+    access_token: Optional[str] = Field(None, description="Token de acceso a invalidar")
 
 
 class PasswordResetRequest(BaseSchema):

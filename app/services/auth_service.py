@@ -2,7 +2,7 @@
 Servicio de autenticación - Login, logout y gestión de tokens
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
@@ -16,6 +16,7 @@ from app.schemas.auth import Token, TokenData, LoginRequest
 from app.services.security_service import SecurityService
 from app.core.config import get_settings
 from sqlalchemy.dialects import postgresql
+from app.models.invalidated_token import InvalidatedToken
 
 # Obtener configuración
 settings = get_settings()
@@ -186,8 +187,11 @@ class AuthService:
             HTTPException: Si el refresh token es inválido
         """
         try:
-            # Verificar refresh token
-            payload = SecurityService.verify_refresh_token(refresh_token)
+            # Crear instancia de SecurityService con la sesión de BD
+            security_service = SecurityService(self.db)
+            
+            # Verificar refresh token (incluye verificación de blacklist)
+            payload = security_service.verify_refresh_token(refresh_token)
             user_id = payload.get("user_id")
             company_id = payload.get("company_id")
             
@@ -224,8 +228,11 @@ class AuthService:
             Usuario si el token es válido, None si no
         """
         try:
-            # Verificar token
-            payload = SecurityService.verify_access_token(token)
+            # Crear instancia de SecurityService con la sesión de BD
+            security_service = SecurityService(self.db)
+            
+            # Verificar token (incluye verificación de blacklist)
+            payload = security_service.verify_access_token(token)
             user_id = payload.get("user_id")
             
             if not user_id:
@@ -241,20 +248,154 @@ class AuthService:
         except Exception:
             return None
     
-    def logout(self, refresh_token: str) -> bool:
+    def logout(self, refresh_token: str, access_token: str = None) -> bool:
         """
-        Cerrar sesión (invalidar refresh token)
+        Cerrar sesión invalidando tokens (access y refresh)
         
         Args:
             refresh_token: Token de refresco a invalidar
+            access_token: Token de acceso a invalidar (opcional)
             
         Returns:
             True si se cerró la sesión correctamente
         """
-        # En una implementación real, aquí se invalidaría el refresh token
-        # Por ahora, simplemente verificamos que el token es válido
         try:
-            SecurityService.verify_refresh_token(refresh_token)
+            # Crear instancia de SecurityService con la sesión de BD
+            security_service = SecurityService(self.db)
+            
+            # Verificar que el refresh token es válido (incluye verificación de blacklist)
+            payload = security_service.verify_refresh_token(refresh_token)
+            if not payload:
+                return False
+            
+            user_id = payload.get("user_id")
+            company_id = payload.get("company_id")
+            
+            if not user_id or not company_id:
+                return False
+            
+            # Invalidar el refresh token
+            refresh_token_hash = security_service.hash_token(refresh_token)
+            
+            # Calcular expiración del refresh token
+            refresh_expires_at = datetime.fromtimestamp(payload.get("exp"), tz=timezone.utc)
+            
+            # Agregar refresh token a la blacklist
+            blacklisted_refresh = InvalidatedToken(
+                token_hash=refresh_token_hash,
+                user_id=user_id,
+                company_id=company_id,
+                expires_at=refresh_expires_at,
+                token_type="refresh"
+            )
+            
+            self.db.add(blacklisted_refresh)
+            
+            # Si se proporciona un access token, invalidarlo también
+            if access_token:
+                try:
+                    # Verificar que el access token es válido
+                    access_payload = security_service.verify_access_token(access_token)
+                    if access_payload:
+                        # Generar hash del access token
+                        access_token_hash = security_service.hash_token(access_token)
+                        
+                        # Calcular expiración del access token
+                        access_expires_at = datetime.fromtimestamp(access_payload.get("exp"), tz=timezone.utc)
+                        
+                        # Agregar access token a la blacklist
+                        blacklisted_access = InvalidatedToken(
+                            token_hash=access_token_hash,
+                            user_id=user_id,
+                            company_id=company_id,
+                            expires_at=access_expires_at,
+                            token_type="access"
+                        )
+                        
+                        self.db.add(blacklisted_access)
+                        print(f"✅ Access token invalidado durante logout")
+                except Exception as e:
+                    print(f"⚠️ No se pudo invalidar access token: {e}")
+            
+            self.db.commit()
+            
             return True
-        except Exception:
-            return False 
+            
+        except Exception as e:
+            # Rollback en caso de error
+            self.db.rollback()
+            print(f"Error durante logout: {e}")
+            return False
+    
+    def invalidate_access_token(self, access_token: str) -> bool:
+        """
+        Invalidar un token de acceso específico
+        
+        Args:
+            access_token: Token de acceso a invalidar
+            
+        Returns:
+            True si se invalidó correctamente
+        """
+        try:
+            # Verificar que el access token es válido
+            security_service = SecurityService(self.db)
+            payload = security_service.verify_access_token(access_token)
+            
+            if not payload:
+                return False
+            
+            user_id = payload.get("user_id")
+            company_id = payload.get("company_id")
+            
+            if not user_id or not company_id:
+                return False
+            
+            # Generar hash del token
+            token_hash = security_service.hash_token(access_token)
+            
+            # Calcular expiración del token
+            expires_at = datetime.fromtimestamp(payload.get("exp"), tz=timezone.utc)
+            
+            # Agregar token a la blacklist
+            blacklisted_token = InvalidatedToken(
+                token_hash=token_hash,
+                user_id=user_id,
+                company_id=company_id,
+                expires_at=expires_at,
+                token_type="access"
+            )
+            
+            self.db.add(blacklisted_token)
+            self.db.commit()
+            
+            return True
+            
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error invalidando access token: {e}")
+            return False
+    
+    def _invalidate_user_access_tokens(self, user_id: str, company_id: str):
+        """
+        Invalidar todos los tokens de acceso de un usuario para una empresa específica
+        Este método es opcional y más agresivo - invalida tokens incluso si no se han usado
+        
+        Args:
+            user_id: ID del usuario
+            company_id: ID de la empresa
+        """
+        try:
+            # Buscar tokens de acceso que aún no han expirado
+            current_time = datetime.now(timezone.utc)
+            
+            # Nota: Esta implementación es conceptual ya que no tenemos un registro
+            # de todos los tokens emitidos. En una implementación real, podrías:
+            # 1. Mantener un registro de tokens emitidos
+            # 2. Usar un sistema de rotación de claves secretas
+            # 3. Implementar un mecanismo de "family tokens"
+            
+            pass
+            
+        except Exception as e:
+            print(f"Error invalidando tokens de acceso: {e}") 

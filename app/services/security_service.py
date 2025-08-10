@@ -5,9 +5,12 @@ Servicio de seguridad - Hash y verificación de contraseñas
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
+from sqlalchemy.orm import Session
+from sqlalchemy import and_
 
 from app.core.config import get_settings
 from app.core.security import verify_password as core_verify_password, get_password_hash as core_get_password_hash
+from app.models.invalidated_token import InvalidatedToken
 
 # Obtener configuración
 settings = get_settings()
@@ -15,6 +18,9 @@ settings = get_settings()
 
 class SecurityService:
     """Servicio para operaciones de seguridad"""
+    
+    def __init__(self, db: Session):
+        self.db = db
     
     @staticmethod
     def get_password_hash(password: str) -> str:
@@ -87,9 +93,22 @@ class SecurityService:
         return encoded_jwt
     
     @staticmethod
-    def verify_access_token(token: str) -> Optional[dict]:
+    def hash_token(token: str) -> str:
         """
-        Verificar y decodificar token JWT de acceso
+        Generar hash de un token para almacenamiento seguro en la blacklist
+        
+        Args:
+            token: Token JWT a hashear
+            
+        Returns:
+            Hash del token
+        """
+        import hashlib
+        return hashlib.sha256(token.encode()).hexdigest()
+    
+    def verify_access_token(self, token: str) -> Optional[dict]:
+        """
+        Verificar y decodificar token JWT de acceso, incluyendo verificación de blacklist
         
         Args:
             token: Token JWT a verificar
@@ -98,20 +117,51 @@ class SecurityService:
             Datos del token si es válido, None si no
         """
         try:
+            # Primero verificar que el token JWT es válido
             payload = jwt.decode(token, settings.security.secret_key, algorithms=[settings.security.algorithm])
             
             # Verificar que es un token de acceso
             if payload.get("type") != "access":
                 return None
             
+            # Verificar que el token no esté en la blacklist
+            if self._is_token_blacklisted(token):
+                return None
+            
             return payload
         except JWTError:
             return None
     
-    @staticmethod
-    def verify_refresh_token(token: str) -> Optional[dict]:
+    def _is_token_blacklisted(self, token: str) -> bool:
         """
-        Verificar y decodificar token JWT de refresco
+        Verificar si un token está en la blacklist
+        
+        Args:
+            token: Token a verificar
+            
+        Returns:
+            True si el token está en la blacklist, False si no
+        """
+        try:
+            # Generar hash del token para buscar en la blacklist
+            token_hash = self.hash_token(token)
+            
+            # Buscar el token en la tabla de tokens invalidados
+            blacklisted_token = (
+                self.db.query(InvalidatedToken)
+                .filter(InvalidatedToken.token_hash == token_hash)
+                .first()
+            )
+            
+            return blacklisted_token is not None
+        except Exception:
+            # Si hay algún error en la consulta, asumimos que el token no está blacklisted
+            # para evitar bloquear usuarios por errores de base de datos
+            return False
+    
+    def verify_refresh_token(self, token: str) -> Optional[dict]:
+        """
+        Verificar y decodificar token JWT de refresco, incluyendo verificación de blacklist
         
         Args:
             token: Token JWT a verificar
@@ -120,10 +170,15 @@ class SecurityService:
             Datos del token si es válido, None si no
         """
         try:
+            # Primero verificar que el token JWT es válido
             payload = jwt.decode(token, settings.security.secret_key, algorithms=[settings.security.algorithm])
             
             # Verificar que es un token de refresco
             if payload.get("type") != "refresh":
+                return None
+            
+            # Verificar que el token no esté en la blacklist
+            if self._is_token_blacklisted(token):
                 return None
             
             return payload

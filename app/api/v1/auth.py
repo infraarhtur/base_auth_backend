@@ -63,14 +63,15 @@ async def logout(
     auth_service = Depends(get_auth_service)
 ):
     """
-    Cerrar sesión invalidando refresh token
+    Cerrar sesión
     
-    - **refresh_token**: Token de refresco a invalidar (opcional)
+    - **refresh_token**: Token de refresco a invalidar
+    - **access_token**: Token de acceso a invalidar (opcional)
     
     Returns:
         Confirmación de logout
     """
-    success = auth_service.logout(logout_data.refresh_token)
+    success = auth_service.logout(logout_data.refresh_token, logout_data.access_token)
     
     return SuccessResponse(
         message="Sesión cerrada correctamente",
