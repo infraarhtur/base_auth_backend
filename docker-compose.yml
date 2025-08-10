@@ -1,0 +1,35 @@
+services:
+  # Servicio de base de datos PostgreSQL
+  db:
+    image: postgres:15
+    container_name: base_auth_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: base_auth
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # Servicio de la API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: base_auth_backend
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+      - ./tests:/app/tests
+    environment:
+      - DATABASE_URL=postgresql://postgres:1234@db:5432/base_auth
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
