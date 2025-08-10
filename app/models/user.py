@@ -23,6 +23,7 @@ class AppUser(BaseModel):
     # Autenticación
     hashed_password = Column(Text, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    is_verified = Column(Boolean, default=False, nullable=False)
     
     # Relaciones
     companies = relationship("CompanyUser", back_populates="user", cascade="all, delete-orphan")

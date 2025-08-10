@@ -62,6 +62,69 @@ class SecuritySettings(BaseSettings):
     )
 
 
+class EmailSettings(BaseSettings):
+    """Configuración del servicio de email"""
+    
+    smtp_server: str = Field(
+        default="smtp.gmail.com",
+        alias="SMTP_SERVER",
+        description="Servidor SMTP"
+    )
+    smtp_port: int = Field(
+        default=587,
+        alias="SMTP_PORT",
+        description="Puerto SMTP"
+    )
+    smtp_use_tls: bool = Field(
+        default=True,
+        alias="SMTP_USE_TLS",
+        description="Usar TLS para conexión SMTP"
+    )
+    smtp_username: str = Field(
+        default="",
+        alias="SMTP_USERNAME",
+        description="Usuario SMTP"
+    )
+    smtp_password: str = Field(
+        default="",
+        alias="SMTP_PASSWORD",
+        description="Contraseña SMTP"
+    )
+    smtp_from_email: str = Field(
+        default="",
+        alias="SMTP_FROM_EMAIL",
+        description="Email remitente"
+    )
+    smtp_from_name: str = Field(
+        default="Base Auth Backend",
+        alias="SMTP_FROM_NAME",
+        description="Nombre del remitente"
+    )
+    app_base_url: str = Field(
+        default="http://localhost:8000",
+        alias="APP_BASE_URL",
+        description="URL base de la aplicación"
+    )
+    password_reset_url: str = Field(
+        default="/auth/password-reset/confirm",
+        alias="PASSWORD_RESET_URL",
+        description="URL para confirmar reset de contraseña"
+    )
+    email_verification_url: str = Field(
+        default="/auth/email-verification/confirm",
+        alias="EMAIL_VERIFICATION_URL",
+        description="URL para confirmar verificación de email"
+    )
+    
+    # Configuración de Pydantic Settings
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore"
+    )
+
+
 class AppSettings(BaseSettings):
     """Configuración principal de la aplicación"""
     
@@ -93,6 +156,10 @@ class AppSettings(BaseSettings):
     security: SecuritySettings = Field(
         default_factory=SecuritySettings,
         description="Configuración de seguridad"
+    )
+    email: EmailSettings = Field(
+        default_factory=EmailSettings,
+        description="Configuración del servicio de email"
     )
     
     # Configuración de Pydantic Settings

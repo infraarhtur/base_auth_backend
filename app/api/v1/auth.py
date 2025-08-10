@@ -111,12 +111,24 @@ async def request_password_reset(
     Returns:
         Confirmación de solicitud
     """
-    # En una implementación real, aquí se enviaría un email
-    # Por ahora, solo simulamos el proceso
-    return SuccessResponse(
-        message="Si el email existe, se enviará un enlace de reset",
-        data={"email": reset_data.email}
-    )
+    try:
+        success = auth_service.request_password_reset(reset_data.email)
+        
+        if success:
+            return SuccessResponse(
+                message="Si el email existe, se enviará un enlace de reset",
+                data={"email": reset_data.email}
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error procesando la solicitud de reset"
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno: {str(e)}"
+        )
 
 
 @router.post("/password-reset/confirm", response_model=SuccessResponse, summary="Confirmar reset de contraseña")
@@ -133,12 +145,27 @@ async def confirm_password_reset(
     Returns:
         Confirmación de cambio de contraseña
     """
-    # En una implementación real, aquí se validaría el token
-    # y se cambiaría la contraseña
-    return SuccessResponse(
-        message="Contraseña cambiada correctamente",
-        data={"success": True}
-    )
+    try:
+        success = auth_service.confirm_password_reset(
+            confirm_data.token, 
+            confirm_data.new_password
+        )
+        
+        if success:
+            return SuccessResponse(
+                message="Contraseña cambiada correctamente",
+                data={"success": True}
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Token inválido o expirado"
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno: {str(e)}"
+        )
 
 
 @router.post("/email-verification", response_model=SuccessResponse, summary="Solicitar verificación de email")
@@ -154,12 +181,24 @@ async def request_email_verification(
     Returns:
         Confirmación de solicitud
     """
-    # En una implementación real, aquí se enviaría un email
-    # Por ahora, solo simulamos el proceso
-    return SuccessResponse(
-        message="Si el email existe, se enviará un enlace de verificación",
-        data={"email": verification_data.email}
-    )
+    try:
+        success = auth_service.request_email_verification(verification_data.email)
+        
+        if success:
+            return SuccessResponse(
+                message="Si el email existe, se enviará un enlace de verificación",
+                data={"email": verification_data.email}
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error procesando la solicitud de verificación"
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno: {str(e)}"
+        )
 
 
 @router.post("/email-verification/confirm", response_model=SuccessResponse, summary="Confirmar verificación de email")
@@ -175,9 +214,21 @@ async def confirm_email_verification(
     Returns:
         Confirmación de verificación
     """
-    # En una implementación real, aquí se validaría el token
-    # y se marcaría el email como verificado
-    return SuccessResponse(
-        message="Email verificado correctamente",
-        data={"success": True}
-    )
+    try:
+        success = auth_service.confirm_email_verification(confirm_data.token)
+        
+        if success:
+            return SuccessResponse(
+                message="Email verificado correctamente",
+                data={"success": True}
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Token inválido o expirado"
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno: {str(e)}"
+        )

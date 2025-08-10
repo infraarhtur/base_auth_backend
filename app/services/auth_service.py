@@ -17,6 +17,8 @@ from app.services.security_service import SecurityService
 from app.core.config import get_settings
 from sqlalchemy.dialects import postgresql
 from app.models.invalidated_token import InvalidatedToken
+from app.services.email_service import EmailService
+from app.core.security import validate_password_strength, get_password_hash
 
 # Obtener configuración
 settings = get_settings()
@@ -398,4 +400,180 @@ class AuthService:
             pass
             
         except Exception as e:
-            print(f"Error invalidando tokens de acceso: {e}") 
+            print(f"Error invalidando tokens de acceso: {e}")
+    
+    def request_password_reset(self, email: str) -> bool:
+        """
+        Solicitar reset de contraseña
+        
+        Args:
+            email: Email del usuario
+            
+        Returns:
+            True si se procesó la solicitud correctamente
+        """
+        try:
+            # Buscar usuario por email
+            user = self.db.query(AppUser).filter(AppUser.email == email).first()
+            
+            if not user:
+                # Por seguridad, no revelamos si el email existe o no
+                return True
+            
+            if not user.is_active:
+                return True
+            
+            # Generar token de reset
+            security_service = SecurityService(self.db)
+            reset_token = security_service.generate_password_reset_token(email)
+            
+            # Enviar email
+            email_service = EmailService()
+            email_sent = email_service.send_password_reset_email(
+                email=email,
+                token=reset_token,
+                user_name=user.name
+            )
+            
+            if email_sent:
+                print(f"✅ Email de reset enviado a {email}")
+                return True
+            else:
+                print(f"❌ Error enviando email de reset a {email}")
+                return False
+                
+        except Exception as e:
+            print(f"Error en request_password_reset: {e}")
+            return False
+    
+    def confirm_password_reset(self, token: str, new_password: str) -> bool:
+        """
+        Confirmar reset de contraseña
+        
+        Args:
+            token: Token de reset
+            new_password: Nueva contraseña
+            
+        Returns:
+            True si se cambió la contraseña correctamente
+        """
+        try:
+            # Verificar token
+            security_service = SecurityService(self.db)
+            email = security_service.verify_password_reset_token(token)
+            
+            if not email:
+                return False
+            
+            # Buscar usuario
+            user = self.db.query(AppUser).filter(AppUser.email == email).first()
+            if not user or not user.is_active:
+                return False
+            
+            # Validar fortaleza de contraseña
+            is_valid, error_message = validate_password_strength(new_password)
+            if not is_valid:
+                print(f"Contraseña débil: {error_message}")
+                return False
+            
+            # Hashear nueva contraseña
+            hashed_password = get_password_hash(new_password)
+            
+            # Actualizar contraseña
+            user.hashed_password = hashed_password
+            self.db.commit()
+            
+            print(f"✅ Contraseña actualizada para {email}")
+            return True
+            
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error en confirm_password_reset: {e}")
+            return False
+    
+    def request_email_verification(self, email: str) -> bool:
+        """
+        Solicitar verificación de email
+        
+        Args:
+            email: Email del usuario
+            
+        Returns:
+            True si se procesó la solicitud correctamente
+        """
+        try:
+            # Buscar usuario por email
+            user = self.db.query(AppUser).filter(AppUser.email == email).first()
+            
+            if not user:
+                # Por seguridad, no revelamos si el email existe o no
+                return True
+            
+            if not user.is_active:
+                return True
+            
+            # Verificar si ya está verificado
+            if user.is_verified:
+                return True
+            
+            # Generar token de verificación
+            security_service = SecurityService(self.db)
+            verification_token = security_service.generate_email_verification_token(email)
+            
+            # Enviar email
+            email_service = EmailService()
+            email_sent = email_service.send_verification_email(
+                email=email,
+                token=verification_token,
+                user_name=user.name
+            )
+            
+            if email_sent:
+                print(f"✅ Email de verificación enviado a {email}")
+                return True
+            else:
+                print(f"❌ Error enviando email de verificación a {email}")
+                return False
+                
+        except Exception as e:
+            print(f"Error en request_email_verification: {e}")
+            return False
+    
+    def confirm_email_verification(self, token: str) -> bool:
+        """
+        Confirmar verificación de email
+        
+        Args:
+            token: Token de verificación
+            
+        Returns:
+            True si se verificó el email correctamente
+        """
+        try:
+            # Verificar token
+            security_service = SecurityService(self.db)
+            email = security_service.verify_email_verification_token(token)
+            
+            if not email:
+                return False
+            
+            # Buscar usuario
+            user = self.db.query(AppUser).filter(AppUser.email == email).first()
+            if not user or not user.is_active:
+                return False
+            
+            # Verificar si ya está verificado
+            if user.is_verified:
+                return True
+            
+            # Marcar como verificado
+            user.is_verified = True
+            self.db.commit()
+            
+            print(f"✅ Email verificado para {email}")
+            return True
+            
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error en confirm_email_verification: {e}")
+            return False 
