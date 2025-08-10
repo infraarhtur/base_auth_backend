@@ -17,10 +17,10 @@ class InvalidatedToken(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
     token_hash = Column(String(255), nullable=False, index=True, unique=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("app_user.id"), nullable=False, index=True)
-    company_id = Column(UUID(as_uuid=True), ForeignKey("company.id"), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("company.id"), nullable=True, index=True)  # Nullable para tokens de reset de contraseña
     invalidated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
-    token_type = Column(String(20), nullable=False, default="access")  # "access" o "refresh"
+    token_type = Column(String(20), nullable=False, default="access")  # "access", "refresh", o "password_reset"
     
     def __repr__(self):
         return f"<InvalidatedToken(id={self.id}, user_id={self.user_id}, expires_at={self.expires_at})>" 

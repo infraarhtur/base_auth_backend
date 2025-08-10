@@ -221,10 +221,9 @@ class SecurityService:
         
         return jwt.encode(data, settings.security.secret_key, algorithm=settings.security.algorithm)
     
-    @staticmethod
-    def verify_password_reset_token(token: str) -> Optional[str]:
+    def verify_password_reset_token(self, token: str) -> Optional[str]:
         """
-        Verificar token de reset de contraseña
+        Verificar token de reset de contraseña (incluye verificación de blacklist)
         
         Args:
             token: Token JWT a verificar
@@ -233,6 +232,11 @@ class SecurityService:
             Email del usuario si el token es válido, None si no
         """
         try:
+            # Verificar que el token no esté en la blacklist
+            if self._is_token_blacklisted(token):
+                print(f"❌ Token de reset en blacklist")
+                return None
+            
             payload = jwt.decode(token, settings.security.secret_key, algorithms=[settings.security.algorithm])
             
             # Verificar que es un token de reset de contraseña

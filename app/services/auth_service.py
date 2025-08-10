@@ -446,7 +446,7 @@ class AuthService:
             print(f"Error en request_password_reset: {e}")
             return False
     
-    def confirm_password_reset(self, token: str, new_password: str) -> bool:
+    def confirm_password_reset(self, token: str, new_password: str) -> tuple[bool, Optional[str]]:
         """
         Confirmar reset de contraseña
         
@@ -455,7 +455,7 @@ class AuthService:
             new_password: Nueva contraseña
             
         Returns:
-            True si se cambió la contraseña correctamente
+            Tupla (success, error_message) donde success es True si se cambió la contraseña correctamente
         """
         try:
             # Verificar token
@@ -463,33 +463,123 @@ class AuthService:
             email = security_service.verify_password_reset_token(token)
             
             if not email:
-                return False
+                return False, "Token inválido o expirado"
             
             # Buscar usuario
             user = self.db.query(AppUser).filter(AppUser.email == email).first()
             if not user or not user.is_active:
-                return False
+                return False, "Usuario no encontrado o inactivo"
             
             # Validar fortaleza de contraseña
             is_valid, error_message = validate_password_strength(new_password)
             if not is_valid:
                 print(f"Contraseña débil: {error_message}")
-                return False
+                return False, error_message
             
             # Hashear nueva contraseña
             hashed_password = get_password_hash(new_password)
             
             # Actualizar contraseña
             user.hashed_password = hashed_password
+            
+            # Invalidar el token después de usarlo exitosamente
+            self._invalidate_password_reset_token(token, str(user.id))
+            
             self.db.commit()
             
             print(f"✅ Contraseña actualizada para {email}")
-            return True
+            return True, None
             
         except Exception as e:
             self.db.rollback()
             print(f"Error en confirm_password_reset: {e}")
-            return False
+            return False, f"Error interno: {str(e)}"
+    
+    def validate_password_reset_token(self, token: str) -> Optional[tuple[dict, datetime]]:
+        """
+        Validar token de reset de contraseña sin cambiar la contraseña
+        
+        Args:
+            token: Token de reset a validar
+            
+        Returns:
+            Tupla (info_usuario, fecha_expiracion) si el token es válido, None si no
+        """
+        try:
+            # Verificar token
+            security_service = SecurityService(self.db)
+            email = security_service.verify_password_reset_token(token)
+            
+            if not email:
+                return None
+            
+            # Buscar usuario
+            user = self.db.query(AppUser).filter(AppUser.email == email).first()
+            if not user or not user.is_active:
+                return None
+            
+            # Decodificar token para obtener expiración
+            from jose import jwt
+            from app.core.config import get_settings
+            settings = get_settings()
+            
+            try:
+                payload = jwt.decode(token, settings.security.secret_key, algorithms=[settings.security.algorithm])
+                expires_at = datetime.fromtimestamp(payload.get("exp"), tz=timezone.utc)
+            except:
+                return None
+            
+            # Información del usuario (sin datos sensibles)
+            user_info = {
+                "email": user.email,
+                "name": user.name,
+                "is_verified": user.is_verified
+            }
+            
+            return user_info, expires_at
+            
+        except Exception as e:
+            print(f"Error en validate_password_reset_token: {e}")
+            return None
+    
+    def _invalidate_password_reset_token(self, token: str, user_id: str):
+        """
+        Invalidar token de reset de contraseña después de uso exitoso
+        
+        Args:
+            token: Token a invalidar
+            user_id: ID del usuario
+        """
+        try:
+            # Generar hash del token para almacenarlo en la blacklist
+            security_service = SecurityService(self.db)
+            token_hash = security_service.hash_token(token)
+            
+            # Decodificar token para obtener expiración
+            from jose import jwt
+            from app.core.config import get_settings
+            settings = get_settings()
+            
+            try:
+                payload = jwt.decode(token, settings.security.secret_key, algorithms=[settings.security.algorithm])
+                expires_at = datetime.fromtimestamp(payload.get("exp"), tz=timezone.utc)
+            except:
+                expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+            
+            # Agregar token a la blacklist
+            blacklisted_token = InvalidatedToken(
+                token_hash=token_hash,
+                user_id=user_id,
+                company_id=None,  # Los tokens de reset no están asociados a empresa específica
+                expires_at=expires_at,
+                token_type="password_reset"
+            )
+            
+            self.db.add(blacklisted_token)
+            print(f"✅ Token de reset invalidado para usuario {user_id}")
+            
+        except Exception as e:
+            print(f"Error invalidando token de reset: {e}")
     
     def request_email_verification(self, email: str) -> bool:
         """
@@ -577,3 +667,25 @@ class AuthService:
             self.db.rollback()
             print(f"Error en confirm_email_verification: {e}")
             return False 
+    
+    def encrypt_string(self, plain_string: str) -> str:
+        """
+        Encriptar un string usando el mismo algoritmo que las contraseñas
+        
+        Args:
+            plain_string: String en texto plano a encriptar
+            
+        Returns:
+            String encriptado que puede usarse como contraseña
+        """
+        try:
+            # Usar la función de seguridad para generar el hash
+            encrypted_string = get_password_hash(plain_string)
+            return encrypted_string
+            
+        except Exception as e:
+            print(f"Error encriptando string: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error interno al encriptar el string"
+            ) 

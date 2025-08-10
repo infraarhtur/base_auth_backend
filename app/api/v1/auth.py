@@ -14,7 +14,10 @@ from app.schemas.auth import (
     PasswordResetRequest,
     PasswordResetConfirm,
     EmailVerificationRequest,
-    EmailVerificationConfirm
+    EmailVerificationConfirm,
+    PasswordResetValidationResponse,
+    EncryptStringRequest,
+    EncryptStringResponse
 )
 from app.schemas.response import SuccessResponse
 from app.models.user import AppUser
@@ -146,7 +149,7 @@ async def confirm_password_reset(
         Confirmación de cambio de contraseña
     """
     try:
-        success = auth_service.confirm_password_reset(
+        success, error_message = auth_service.confirm_password_reset(
             confirm_data.token, 
             confirm_data.new_password
         )
@@ -157,11 +160,73 @@ async def confirm_password_reset(
                 data={"success": True}
             )
         else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Token inválido o expirado"
+            # Manejar diferentes tipos de errores con mensajes específicos
+            if "Token inválido" in error_message or "expirado" in error_message:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error_message
+                )
+            elif "Usuario no encontrado" in error_message:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error_message
+                )
+            elif "debe tener al menos" in error_message or "debe contener" in error_message:
+                # Errores de validación de contraseña
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=error_message
+                )
+            else:
+                # Otros errores
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error_message
+                )
+    except HTTPException:
+        # Re-lanzar HTTPException sin modificar
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno: {str(e)}"
+        )
+
+
+@router.get("/password-reset/validate", summary="Validar token de reset de contraseña")
+async def validate_password_reset_token(
+    token: str,
+    auth_service = Depends(get_auth_service)
+):
+    """
+    Validar token de reset de contraseña antes de mostrar formulario
+    
+    - **token**: Token de reset a validar
+    
+    Returns:
+        Información del usuario si el token es válido
+    """
+    try:
+        validation_result = auth_service.validate_password_reset_token(token)
+        
+        if validation_result:
+            user_info, expires_at = validation_result
+            return PasswordResetValidationResponse(
+                valid=True,
+                user=user_info,
+                expires_at=expires_at,
+                message="Token válido"
+            )
+        else:
+            # Devolver respuesta estructurada para token inválido
+            return PasswordResetValidationResponse(
+                valid=False,
+                user=None,
+                expires_at=None,
+                message="Token inválido o expirado"
             )
     except Exception as e:
+        # Solo errores internos del servidor
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error interno: {str(e)}"
@@ -227,6 +292,34 @@ async def confirm_email_verification(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Token inválido o expirado"
             )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno: {str(e)}"
+        )
+
+
+@router.post("/encrypt", response_model=EncryptStringResponse, summary="Encriptar string")
+async def encrypt_string(
+    encrypt_data: EncryptStringRequest,
+    auth_service = Depends(get_auth_service)
+):
+    """
+    Encriptar un string usando el mismo algoritmo que las contraseñas
+    
+    - **plain_string**: String en texto plano a encriptar
+    
+    Returns:
+        String encriptado que puede usarse como contraseña
+    """
+    try:
+        encrypted_string = auth_service.encrypt_string(encrypt_data.plain_string)
+        
+        return EncryptStringResponse(
+            encrypted_string=encrypted_string,
+            message="String encriptado correctamente"
+        )
+        
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
