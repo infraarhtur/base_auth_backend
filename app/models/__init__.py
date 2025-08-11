@@ -11,6 +11,7 @@ from .permission import Permission
 from .user_role import UserRole
 from .role_permission import RolePermission
 from .user_identity import UserIdentity
+from .invalidated_token import InvalidatedToken
 
 __all__ = [
     "Base",
@@ -21,5 +22,6 @@ __all__ = [
     "Permission",
     "UserRole",
     "RolePermission",
-    "UserIdentity"
+    "UserIdentity",
+    "InvalidatedToken"
 ]

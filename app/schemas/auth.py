@@ -48,7 +48,8 @@ class RefreshRequest(BaseSchema):
 class LogoutRequest(BaseSchema):
     """Esquema para solicitud de logout"""
     
-    refresh_token: Optional[str] = Field(None, description="Token de refresco a invalidar")
+    refresh_token: str = Field(..., description="Token de refresco a invalidar")
+    access_token: Optional[str] = Field(None, description="Token de acceso a invalidar")
 
 
 class PasswordResetRequest(BaseSchema):
@@ -73,4 +74,26 @@ class EmailVerificationRequest(BaseSchema):
 class EmailVerificationConfirm(BaseSchema):
     """Esquema para confirmar verificación de email"""
     
-    token: str = Field(..., description="Token de verificación") 
+    token: str = Field(..., description="Token de verificación")
+
+
+class PasswordResetValidationResponse(BaseSchema):
+    """Esquema para respuesta de validación de token de reset"""
+    
+    valid: bool = Field(..., description="Si el token es válido")
+    user: Optional[dict] = Field(None, description="Información del usuario si el token es válido")
+    expires_at: Optional[datetime] = Field(None, description="Fecha de expiración del token")
+    message: str = Field(..., description="Mensaje descriptivo")
+
+
+class EncryptStringRequest(BaseSchema):
+    """Esquema para solicitud de encriptación de string"""
+    
+    plain_string: str = Field(..., description="String en texto plano a encriptar")
+
+
+class EncryptStringResponse(BaseSchema):
+    """Esquema para respuesta de encriptación de string"""
+    
+    encrypted_string: str = Field(..., description="String encriptado")
+    message: str = Field(..., description="Mensaje de confirmación") 

@@ -1,4 +1,24 @@
--r requirements.txt
-black==25.1.0
-pytest==8.4.1
-isort==6.0.1 
+# Development and testing dependencies
+
+# Testing framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.10.0
+
+# Data factories for testing
+factory-boy>=3.2.0
+faker>=18.0.0
+
+# HTTP client for testing FastAPI
+httpx>=0.24.0
+
+# Database testing utilities
+pytest-sqlalchemy>=2.0.0
+
+# Coverage reporting
+coverage>=7.0.0
+
+# Additional testing utilities
+pytest-xdist>=3.0.0  # Parallel test execution
+pytest-html>=3.1.0   # HTML test reports 

@@ -18,11 +18,12 @@ class AppUser(BaseModel):
     
     # Información personal
     name = Column(Text, nullable=False)
-    email = Column(Text, nullable=False, unique=True, index=True)
+    email = Column(Text, nullable=False, unique=True)
     
     # Autenticación
     hashed_password = Column(Text, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    is_verified = Column(Boolean, default=False, nullable=False)
     
     # Relaciones
     companies = relationship("CompanyUser", back_populates="user", cascade="all, delete-orphan")

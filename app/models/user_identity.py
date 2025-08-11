@@ -21,8 +21,8 @@ class UserIdentity(BaseModel):
     user_id = Column(UUID(as_uuid=True), ForeignKey("app_user.id", ondelete="CASCADE"), nullable=False)
     
     # Información del proveedor
-    provider = Column(Text, nullable=False, index=True)  # google, facebook, github, etc.
-    provider_user_id = Column(Text, nullable=False, index=True)
+    provider = Column(Text, nullable=False)  # google, facebook, github, etc.
+    provider_user_id = Column(Text, nullable=False)
     
     # Información del usuario en el proveedor
     email = Column(Text, nullable=True)
