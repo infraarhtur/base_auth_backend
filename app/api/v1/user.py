@@ -210,7 +210,7 @@ async def change_password(
         Confirmación de cambio de contraseña
     """
     # Verificar que el usuario puede cambiar su propia contraseña
-    if current_user.id != user_id:
+    if str(current_user.id) != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Solo puedes cambiar tu propia contraseña"
