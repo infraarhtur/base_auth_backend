@@ -44,6 +44,7 @@ class RoleService:
         Raises:
             HTTPException: Si el nombre ya existe
         """
+        role_data.name = role_data.name.lower()
         # Verificar si el nombre ya existe en la misma empresa
         existing_role = (
             self.db.query(Role)
