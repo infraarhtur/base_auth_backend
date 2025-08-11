@@ -18,7 +18,7 @@ class AppUser(BaseModel):
     
     # Información personal
     name = Column(Text, nullable=False)
-    email = Column(Text, nullable=False, unique=True, index=True)
+    email = Column(Text, nullable=False, unique=True)
     
     # Autenticación
     hashed_password = Column(Text, nullable=False)
