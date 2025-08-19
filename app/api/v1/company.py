@@ -51,8 +51,7 @@ async def get_companies(
     skip: int = Query(0, ge=0, description="Registros a saltar"),
     limit: int = Query(10, ge=1, le=100, description="Límite de registros"),
     search: Optional[str] = Query(None, description="Término de búsqueda"),
-    company_service = Depends(get_company_service),
-    _: bool = Depends(require_company_read)
+    company_service = Depends(get_company_service)
 ):
     """
     Obtener lista de empresas con filtros
