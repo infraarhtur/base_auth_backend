@@ -33,6 +33,7 @@ class CompanyService:
         Raises:
             HTTPException: Si el nombre ya existe
         """
+        company_data.name = company_data.name.lower()        
         # Verificar si el nombre ya existe
         existing_company = self.db.query(Company).filter(Company.name == company_data.name).first()
         if existing_company:

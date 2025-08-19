@@ -36,6 +36,10 @@ class UserService:
         Raises:
             HTTPException: Si el email ya existe, la compañía no existe, o el rol no existe
         """
+        user_data.name = user_data.name.lower()
+        user_data.company_name = user_data.company_name.lower()
+        user_data.email = user_data.email.lower()
+        user_data.rol = user_data.rol.lower()
         # Buscar la compañía por nombre
         company = self.db.query(Company).filter(Company.name == user_data.company_name).first()
         if not company:
