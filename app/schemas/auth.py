@@ -13,7 +13,7 @@ class LoginRequest(BaseSchema):
     """Esquema para solicitud de login"""
     
     email: str = Field(..., description="Email del usuario")
-    hashed_password: str = Field(..., description="Hash de la contraseña del usuario")
+    password: str = Field(..., description="Contraseña del usuario en texto plano")
     company_name: str = Field(..., description="Nombre de la empresa")
     remember_me: Optional[bool] = Field(False, description="Recordar sesión")
 
