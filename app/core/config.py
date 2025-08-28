@@ -106,7 +106,7 @@ class EmailSettings(BaseSettings):
         description="URL base de la aplicación"
     )
     password_reset_url: str = Field(
-        default="/auth/password-reset/confirm",
+        default="/token-validate",
         alias="PASSWORD_RESET_URL",
         description="URL para confirmar reset de contraseña"
     )
