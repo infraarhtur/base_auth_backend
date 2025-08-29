@@ -25,7 +25,7 @@ class EmailService:
         self.smtp_password = settings.email.smtp_password
         self.smtp_from_email = settings.email.smtp_from_email
         self.smtp_from_name = settings.email.smtp_from_name
-        self.app_base_url = "http://localhost:4200" #settings.email.app_base_url
+        self.app_base_url = settings.email.app_base_url
     
     def _create_message(self, to_email: str, subject: str, html_content: str) -> MIMEMultipart:
         """
@@ -92,8 +92,9 @@ class EmailService:
         Returns:
             Template HTML del email
         """
-        #passwordReset = settings.email.password_reset_url
-        passwordReset='/token-validate'
+        passwordReset = settings.email.password_reset_url
+        print('passwordReset', passwordReset  )
+        print('app_base_url', self.app_base_url)
 
         reset_url = f"{self.app_base_url}{passwordReset}/{token}"
         

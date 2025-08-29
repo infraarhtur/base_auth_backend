@@ -29,6 +29,17 @@ services:
       - ./tests:/app/tests
     environment:
       - DATABASE_URL=postgresql://postgres:1234@db:5432/base_auth
+      # Configuración SMTP para Gmail
+      - SMTP_SERVER=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USE_TLS=true
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME}
+      - APP_BASE_URL=${APP_BASE_URL}
+      - PASSWORD_RESET_URL=${PASSWORD_RESET_URL}
+      - EMAIL_VERIFICATION_URL=${EMAIL_VERIFICATION_URL}
     depends_on:
       - db
     restart: unless-stopped

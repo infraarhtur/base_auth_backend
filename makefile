@@ -1,4 +1,4 @@
-.PHONY: start stop restart build logs clean help db-up db-down db-migrate db-upgrade db-downgrade db-reset db-seed
+.PHONY: start stop restart build logs clean help db-up db-down db-migrate db-upgrade db-downgrade db-reset db-seed verify-smtp test-email debug-config
 
 # Comando principal para iniciar el entorno de desarrollo
 start:
@@ -47,6 +47,16 @@ db-reset:
 db-seed:
 	docker-compose exec api python -m app.db.seeds
 
+# Comandos de verificación SMTP
+verify-smtp:
+	python scripts/verify_smtp_config.py
+
+test-email:
+	python scripts/test_email_service.py
+
+debug-config:
+	python scripts/debug_config.py
+
 # Mostrar ayuda
 help:
 	@echo "Comandos disponibles:"
@@ -65,6 +75,11 @@ help:
 	@echo "  make db-downgrade  - Revertir última migración"
 	@echo "  make db-reset      - Resetear base de datos (downgrade + upgrade)"
 	@echo "  make db-seed       - Ejecutar datos de prueba"
+	@echo ""
+	@echo "Comandos de verificación SMTP:"
+	@echo "  make verify-smtp   - Verificar configuración SMTP"
+	@echo "  make test-email    - Probar envío de emails"
+	@echo "  make debug-config  - Debuggear configuración completa"
 	@echo "  make help          - Mostrar esta ayuda"
 
 # Comando por defecto
