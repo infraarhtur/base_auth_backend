@@ -18,7 +18,7 @@ from app.core.config import get_settings
 from sqlalchemy.dialects import postgresql
 from app.models.invalidated_token import InvalidatedToken
 from app.services.email_service import EmailService
-from app.core.security import validate_password_strength, get_password_hash
+from app.core.security import validate_password_strength, get_password_hash, verify_password
 
 # Obtener configuración
 settings = get_settings()
@@ -30,13 +30,13 @@ class AuthService:
     def __init__(self, db: Session):
         self.db = db
     
-    def authenticate_user(self, email: str, hashed_password: str, company_name: str) -> Optional[tuple[AppUser, str]]:
+    def authenticate_user(self, email: str, password: str, company_name: str) -> Optional[tuple[AppUser, str]]:
         """
-        Autenticar usuario con email, hash de contraseña y nombre de empresa
+        Autenticar usuario con email, contraseña en texto plano y nombre de empresa
         
         Args:
             email: Email del usuario
-            hashed_password: Hash de la contraseña del usuario
+            password: Contraseña del usuario en texto plano
             company_name: Nombre de la empresa
             
         Returns:
@@ -47,8 +47,8 @@ class AuthService:
         if not user:
             return None
         
-        # Comparar directamente los hashes
-        if user.hashed_password != hashed_password:
+        # Verificar la contraseña recibida contra el hash almacenado
+        if not verify_password(password, user.hashed_password):
             return None
         
         if not user.is_active:
@@ -163,7 +163,7 @@ class AuthService:
         Raises:
             HTTPException: Si las credenciales son incorrectas
         """
-        result = self.authenticate_user(login_data.email, login_data.hashed_password, login_data.company_name)
+        result = self.authenticate_user(login_data.email, login_data.password, login_data.company_name)
         
         if not result:
             raise HTTPException(

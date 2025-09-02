@@ -34,7 +34,7 @@ async def login(
     Autenticar usuario y generar tokens JWT
     
     - **email**: Email del usuario
-    - **hashed_password**: Hash de la contraseña del usuario
+    - **password**: Contraseña del usuario en texto plano
     - **company_name**: Nombre de la empresa
     - **remember_me**: Recordar sesión (opcional)
     

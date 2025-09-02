@@ -92,7 +92,11 @@ class EmailService:
         Returns:
             Template HTML del email
         """
-        reset_url = f"{self.app_base_url}{settings.email.password_reset_url}?token={token}"
+        passwordReset = settings.email.password_reset_url
+        print('passwordReset', passwordReset  )
+        print('app_base_url', self.app_base_url)
+
+        reset_url = f"{self.app_base_url}{passwordReset}/{token}"
         
         return f"""
         <!DOCTYPE html>

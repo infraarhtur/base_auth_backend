@@ -27,8 +27,8 @@ SMTP_FROM_EMAIL=tu-email@gmail.com
 SMTP_FROM_NAME=Base Auth Backend
 
 # URLs de la aplicación (para enlaces en emails)
-APP_BASE_URL=http://localhost:8000
-PASSWORD_RESET_URL=/auth/password-reset/confirm
+APP_BASE_URL=http://localhost:4200
+PASSWORD_RESET_URL=/token-validate
 EMAIL_VERIFICATION_URL=/auth/email-verification/confirm
 ```
 

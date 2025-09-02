@@ -101,12 +101,12 @@ class EmailSettings(BaseSettings):
         description="Nombre del remitente"
     )
     app_base_url: str = Field(
-        default="http://localhost:8000",
+        default="http://localhost:4200",
         alias="APP_BASE_URL",
         description="URL base de la aplicación"
     )
     password_reset_url: str = Field(
-        default="/auth/password-reset/confirm",
+        default="/token-validate",
         alias="PASSWORD_RESET_URL",
         description="URL para confirmar reset de contraseña"
     )
