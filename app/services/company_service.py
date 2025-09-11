@@ -10,6 +10,8 @@ from fastapi import HTTPException, status
 from app.models.company import Company
 from app.models.company_user import CompanyUser
 from app.models.user import AppUser
+from app.models.user_role import UserRole
+from app.models.role import Role
 from app.schemas.company import CompanyCreate, CompanyUpdate, CompanyRead
 
 
@@ -231,27 +233,51 @@ class CompanyService:
     
     def get_company_users(self, company_id: str) -> List[Dict[str, Any]]:
         """
-        Obtener usuarios de una empresa
+        Obtener usuarios de una empresa con sus roles
         
         Args:
             company_id: ID de la empresa
             
         Returns:
-            Lista de usuarios de la empresa
+            Lista de usuarios de la empresa con sus roles
         """
-        users = (
-            self.db.query(CompanyUser)
+        # Consulta con joins para obtener usuarios y sus roles en la empresa
+        users_with_roles = (
+            self.db.query(CompanyUser, AppUser, UserRole, Role)
             .filter(CompanyUser.company_id == company_id)
             .filter(CompanyUser.is_active == True)
+            .join(AppUser, CompanyUser.user_id == AppUser.id)
+            .outerjoin(UserRole, UserRole.user_id == AppUser.id)
+            .outerjoin(Role, 
+                      (Role.id == UserRole.role_id) & 
+                      (Role.company_id == company_id))
             .all()
         )
         
-        return [
-            {
-                "user_id": cu.user_id,
-                "user_name": cu.user.name,
-                "user_email": cu.user.email,
-                "joined_at": cu.created_at
-            }
-            for cu in users
-        ] 
+        # Agrupar por usuario para manejar múltiples roles
+        users_dict = {}
+        for cu, user, user_role, role in users_with_roles:
+            user_id = str(cu.user_id)
+            
+            if user_id not in users_dict:
+                users_dict[user_id] = {
+                    "user_id": cu.user_id,
+                    "user_name": user.name,
+                    "user_email": user.email,
+                    "joined_at": cu.created_at,
+                    "is_active": cu.is_active,
+                    "is_verified": user.is_verified,
+                    "roles": []
+                }
+            
+            # Agregar rol si existe
+            if role and role.name:
+                users_dict[user_id]["roles"].append(role.name)
+        
+        # Convertir a lista y eliminar duplicados en roles
+        result = []
+        for user_data in users_dict.values():
+            user_data["roles"] = list(set(user_data["roles"]))  # Eliminar duplicados
+            result.append(user_data)
+        
+        return result 
