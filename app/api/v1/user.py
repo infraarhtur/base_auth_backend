@@ -41,8 +41,8 @@ async def create_user(
     - **name**: Nombre del usuario
     - **email**: Email del usuario
     - **password**: Contraseña del usuario
-    - **company_name**: Nombre de la compañía
-    - **rol**: Rol del usuario en la compañía
+    - **company_id**: Id de la compañía
+    - **role**: Rol del usuario en la compañía
     
     Returns:
         Usuario creado

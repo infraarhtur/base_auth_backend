@@ -14,8 +14,8 @@ class UserCreate(BaseSchema):
     name: str = Field(..., min_length=1, description="Nombre del usuario")
     email: EmailStr = Field(..., description="Email del usuario")
     password: str = Field(..., min_length=5, description="Contraseña del usuario")
-    company_name: str = Field(..., description="Nombre de la compañía")
-    rol: str = Field(..., description="Rol del usuario en la compañía")
+    company_id: str = Field(..., description="id de la compañia de la compañía")
+    role: str = Field(..., description="Rol del usuario en la compañía")
 
 
 class UserUpdate(BaseSchema):

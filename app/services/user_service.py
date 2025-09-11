@@ -37,11 +37,11 @@ class UserService:
             HTTPException: Si el email ya existe, la compañía no existe, o el rol no existe
         """
         user_data.name = user_data.name.lower()
-        user_data.company_name = user_data.company_name.lower()
+        user_data.company_id= user_data.company_id.lower()
         user_data.email = user_data.email.lower()
-        user_data.rol = user_data.rol.lower()
+        user_data.role = user_data.role.lower()
         # Buscar la compañía por nombre
-        company = self.db.query(Company).filter(Company.name == user_data.company_name).first()
+        company = self.db.query(Company).filter(Company.id == user_data.company_id).first()
         if not company:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -71,7 +71,7 @@ class UserService:
             self.db.query(Role)
             .filter(
                 and_(
-                    Role.name == user_data.rol,
+                    Role.name == user_data.role,
                     Role.company_id == company.id
                 )
             )
