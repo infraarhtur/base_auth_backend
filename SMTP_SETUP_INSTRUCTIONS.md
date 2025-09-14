@@ -29,7 +29,7 @@ SMTP_FROM_NAME=Base Auth Backend
 # URLs de la aplicación (para enlaces en emails)
 APP_BASE_URL=http://localhost:4200
 PASSWORD_RESET_URL=/token-validate
-EMAIL_VERIFICATION_URL=/auth/email-verification/confirm
+EMAIL_VERIFICATION_URL=/email-validate
 ```
 
 ### **PASO 2: Obtener App Password de Gmail**
