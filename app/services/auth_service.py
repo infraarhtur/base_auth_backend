@@ -4,7 +4,7 @@ Servicio de autenticación - Login, logout y gestión de tokens
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 
 from app.models.user import AppUser
@@ -12,6 +12,7 @@ from app.models.user_role import UserRole
 from app.models.role_permission import RolePermission
 from app.models.permission import Permission
 from app.models.role import Role
+from app.models.company_user import CompanyUser
 from app.schemas.auth import Token, TokenData, LoginRequest
 from app.services.security_service import SecurityService
 from app.core.config import get_settings
@@ -236,18 +237,33 @@ class AuthService:
             # Verificar token (incluye verificación de blacklist)
             payload = security_service.verify_access_token(token)
             user_id = payload.get("user_id")
+            company_id = payload.get("company_id")
+            company_name = payload.get("company_name")
             
             if not user_id:
                 return None
             
             # Obtener usuario
-            user = self.db.query(AppUser).filter(AppUser.id == user_id).first()
+            user =  (
+    self.db.query(AppUser)
+    .options(
+        joinedload(AppUser.roles).joinedload(UserRole.role)
+    )
+    .join(CompanyUser, AppUser.id == CompanyUser.user_id)
+    .filter(
+        AppUser.id == user_id,
+        CompanyUser.company_id == company_id,
+        CompanyUser.is_active == True
+    )
+    .first()
+)
             if not user or not user.is_active:
                 return None
             
             return user
             
-        except Exception:
+        except Exception as e   :
+            print(f"Error en get_current_user_from_token: {e}")
             return None
     
     def logout(self, refresh_token: str, access_token: str = None) -> bool:

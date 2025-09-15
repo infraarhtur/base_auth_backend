@@ -20,7 +20,7 @@ class UserCreate(BaseSchema):
 
 class UserUpdate(BaseSchema):
     """Esquema para actualizar un usuario"""
-    
+    role: Optional[str] = Field(None, description="Rol del usuario en la compañía")
     name: Optional[str] = Field(None, min_length=1, description="Nombre del usuario")
     email: Optional[EmailStr] = Field(None, description="Email del usuario")
     is_active: Optional[bool] = Field(None, description="Estado activo del usuario")
@@ -28,7 +28,7 @@ class UserUpdate(BaseSchema):
 
 class UserRead(BaseResponse):
     """Esquema para leer un usuario"""
-    
+    role: Optional[str] = Field(None, description="Rol del usuario en la compañía")
     name: str = Field(..., description="Nombre del usuario")
     email: str = Field(..., description="Email del usuario")
     is_active: bool = Field(..., description="Estado activo del usuario")

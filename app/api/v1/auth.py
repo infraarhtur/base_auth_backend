@@ -94,6 +94,9 @@ async def get_current_user_info(
     """
     return {
         "id": str(current_user.id),
+        "company_id": str(current_user.companies[0].company_id),
+        "company_name": current_user.companies[0].company.name,
+        "roles": [user_role.role.name for user_role in current_user.roles],
         "email": current_user.email,
         "name": current_user.name,
         "is_active": current_user.is_active,
