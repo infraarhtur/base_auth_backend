@@ -163,9 +163,7 @@ async def update_user(
         Usuario actualizado
     """
 
-    print(f"user_data: {user_data}")
-    print(f"user_service: {user_service}")
-    print(f"company_id: {company_id}")
+
     user = user_service.update_user(user_id, user_data,company_id)
     if not user:
         raise HTTPException(
