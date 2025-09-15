@@ -75,6 +75,51 @@ def get_current_active_user(
     return current_user
 
 
+def get_current_company_id(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> str:
+    """
+    Obtener company_id del usuario actual desde token JWT
+    
+    Args:
+        credentials: Credenciales del token
+        db: Sesión de base de datos
+        
+    Returns:
+        company_id del usuario actual
+        
+    Raises:
+        HTTPException: Si el token es inválido o no contiene company_id
+    """
+    auth_service = AuthService(db)
+    
+    try:
+        # Crear instancia de SecurityService con la sesión de BD
+        from app.services.security_service import SecurityService
+        security_service = SecurityService(db)
+        
+        # Verificar token (incluye verificación de blacklist)
+        payload = security_service.verify_access_token(credentials.credentials)
+        company_id = payload.get("company_id")
+        
+        if not company_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token no contiene company_id",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        return str(company_id)
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido o expirado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 def get_user_permissions(
     current_user: AppUser = Depends(get_current_user),
     db: Session = Depends(get_db)

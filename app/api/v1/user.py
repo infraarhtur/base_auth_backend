@@ -7,9 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from app.api.deps import (
+    get_current_user,
     get_db, 
     get_user_service, 
     get_current_active_user,
+    get_current_company_id,
     require_user_read,
     require_user_create,
     require_user_update,
@@ -148,6 +150,7 @@ async def update_user(
     user_id: str,
     user_data: UserUpdate,
     user_service = Depends(get_user_service),
+    company_id: str = Depends(get_current_company_id),
     _: bool = Depends(require_user_update)
 ):
     """
@@ -159,7 +162,11 @@ async def update_user(
     Returns:
         Usuario actualizado
     """
-    user = user_service.update_user(user_id, user_data)
+
+    print(f"user_data: {user_data}")
+    print(f"user_service: {user_service}")
+    print(f"company_id: {company_id}")
+    user = user_service.update_user(user_id, user_data,company_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
