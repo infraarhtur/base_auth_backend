@@ -173,23 +173,22 @@ async def update_user(
     return user
 
 
-@router.delete("/{user_id}/{company_name}", response_model=SuccessResponse, summary="Eliminar usuario")
+@router.delete("/{user_id}", response_model=SuccessResponse, summary="Eliminar usuario")
 async def delete_user(
-    user_id: str,
-    company_name: str,
+    user_id: str,    
     user_service = Depends(get_user_service),
+    company_id: str = Depends(get_current_company_id),
     _: bool = Depends(require_user_delete)
 ):
     """
     Eliminar usuario (soft delete)
     
-    - **user_id**: ID del usuario
-    - **company_name**: Nombre de la compañía
+    - **user_id**: ID del usuario  
     
     Returns:
         Confirmación de eliminación
     """
-    success = user_service.delete_user(user_id, company_name)
+    success = user_service.delete_user(user_id, company_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

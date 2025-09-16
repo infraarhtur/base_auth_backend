@@ -309,19 +309,19 @@ class UserService:
         
         return user
     
-    def delete_user(self, user_id: str, company_name: str) -> bool:
+    def delete_user(self, user_id: str, company_id: str) -> bool:
         """
         Eliminar usuario de una compañía específica (soft delete)
         
         Args:
             user_id: ID del usuario
-            company_name: Nombre de la compañía
             
+            company_id: ID de la compañía
         Returns:
             True si se eliminó, False si no existe la relación
         """
         # Obtener la compañía por nombre
-        company = self.db.query(Company).filter(Company.name == company_name).first()
+        company = self.db.query(Company).filter(Company.id == company_id).first()
         if not company:
             return False
         
