@@ -231,8 +231,7 @@ class UserService:
                 )
             )
         
-        if is_active is not None:
-            query = query.filter(AppUser.is_active == is_active)
+       
         
         #print(query.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
         

@@ -5,7 +5,7 @@ Rutas de autenticación - Login, logout, refresh token
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_auth_service, get_current_user
+from app.api.deps import get_db, get_auth_service, get_current_user,get_current_company_id
 from app.schemas.auth import (
     LoginRequest, 
     Token, 
@@ -118,7 +118,7 @@ async def request_password_reset(
         Confirmación de solicitud
     """
     try:
-        success = auth_service.request_password_reset(reset_data.email)
+        success = auth_service.request_password_reset(reset_data.email,reset_data.company_name)
         
         if success:
             return SuccessResponse(
@@ -239,7 +239,8 @@ async def validate_password_reset_token(
 @router.post("/email-verification", response_model=SuccessResponse, summary="Solicitar verificación de email")
 async def request_email_verification(
     verification_data: EmailVerificationRequest,
-    auth_service = Depends(get_auth_service)
+    auth_service = Depends(get_auth_service),
+     company_id: str = Depends(get_current_company_id),
 ):
     """
     Solicitar verificación de email
@@ -250,7 +251,7 @@ async def request_email_verification(
         Confirmación de solicitud
     """
     try:
-        success = auth_service.request_email_verification(verification_data.email)
+        success = auth_service.request_email_verification(verification_data.email,company_id)
         
         if success:
             return SuccessResponse(

@@ -56,6 +56,7 @@ class PasswordResetRequest(BaseSchema):
     """Esquema para solicitud de reset de contraseña"""
     
     email: str = Field(..., description="Email del usuario")
+    company_name: str = Field(..., description="nombre de la compañía")
 
 
 class PasswordResetConfirm(BaseSchema):

@@ -13,6 +13,7 @@ from app.models.role_permission import RolePermission
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.company_user import CompanyUser
+from app.models.company import Company
 from app.schemas.auth import Token, TokenData, LoginRequest
 from app.services.security_service import SecurityService
 from app.core.config import get_settings
@@ -418,13 +419,13 @@ class AuthService:
         except Exception as e:
             print(f"Error invalidando tokens de acceso: {e}")
     
-    def request_password_reset(self, email: str) -> bool:
+    def request_password_reset(self, email: str,company_name: str ) -> bool:
         """
         Solicitar reset de contraseña
         
         Args:
             email: Email del usuario
-            
+            company_name: Nombre de la compañía
         Returns:
             True si se procesó la solicitud correctamente
         """
@@ -436,8 +437,15 @@ class AuthService:
                 # Por seguridad, no revelamos si el email existe o no
                 return True
             
-            if not user.is_active:
-                return True
+            company = self.db.query(Company).filter(Company.name == company_name).first()
+
+            if not company:
+                return False
+
+            company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user.id).filter(CompanyUser.company_id == company.id).first()
+
+            if not company_user:
+                return False
             
             # Generar token de reset
             security_service = SecurityService(self.db)

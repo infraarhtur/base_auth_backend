@@ -248,7 +248,7 @@ class SecurityService:
             return None
     
     @staticmethod
-    def generate_email_verification_token(email: str) -> str:
+    def generate_email_verification_token(email: str,company_id: str) -> str:
         """
         Generar token para verificación de email
         
@@ -261,6 +261,7 @@ class SecurityService:
         data = {
             "email": email,
             "type": "email_verification",
+            "company_id": company_id,
             "exp": datetime.utcnow() + timedelta(hours=24)  # 24 horas de validez
         }
         

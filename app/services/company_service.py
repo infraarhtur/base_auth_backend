@@ -245,7 +245,7 @@ class CompanyService:
         users_with_roles = (
             self.db.query(CompanyUser, AppUser, UserRole, Role)
             .filter(CompanyUser.company_id == company_id)
-            .filter(CompanyUser.is_active == True)
+            #.filter(CompanyUser.is_active == True)
             .join(AppUser, CompanyUser.user_id == AppUser.id)
             .outerjoin(UserRole, UserRole.user_id == AppUser.id)
             .outerjoin(Role, 
@@ -266,7 +266,7 @@ class CompanyService:
                     "user_email": user.email,
                     "joined_at": cu.created_at,
                     "is_active": cu.is_active,
-                    "is_verified": user.is_verified,
+                    "is_verified": cu.is_verified,
                     "roles": []
                 }
             
