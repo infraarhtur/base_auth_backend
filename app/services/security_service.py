@@ -203,25 +203,26 @@ class SecurityService:
             return None
     
     @staticmethod
-    def generate_password_reset_token(email: str) -> str:
+    def generate_password_reset_token(email: str,company_id: str) -> str:
         """
         Generar token para reset de contraseña
         
         Args:
             email: Email del usuario
-            
+            company_id: ID de la compañía
         Returns:
             Token JWT para reset de contraseña
         """
         data = {
             "email": email,
             "type": "password_reset",
+            "company_id": company_id,
             "exp": datetime.utcnow() + timedelta(hours=1)  # 1 hora de validez
         }
         
         return jwt.encode(data, settings.security.secret_key, algorithm=settings.security.algorithm)
     
-    def verify_password_reset_token(self, token: str) -> Optional[str]:
+    def verify_password_reset_token(self, token: str) -> Optional[tuple[str,str]]:
         """
         Verificar token de reset de contraseña (incluye verificación de blacklist)
         
@@ -229,7 +230,7 @@ class SecurityService:
             token: Token JWT a verificar
             
         Returns:
-            Email del usuario si el token es válido, None si no
+            Email del usuario y ID de la compañía si el token es válido, None si no
         """
         try:
             # Verificar que el token no esté en la blacklist
@@ -243,7 +244,13 @@ class SecurityService:
             if payload.get("type") != "password_reset":
                 return None
             
-            return payload.get("email")
+            email = payload.get("email")
+            company_id = payload.get("company_id")
+            if email and company_id:
+                return email, company_id
+            else:
+                return None
+          
         except JWTError:
             return None
     

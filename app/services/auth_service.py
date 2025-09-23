@@ -48,33 +48,25 @@ class AuthService:
         
         if not user:
             return None
-        
-        # Verificar la contraseña recibida contra el hash almacenado
-        if not verify_password(password, user.hashed_password):
-            return None
-        
-        if not user.is_active:
-            return None
-        
-        # Verificar que el usuario pertenece a la empresa especificada
-        from app.models.company import Company
-        from app.models.company_user import CompanyUser
-        
+
         company = self.db.query(Company).filter(Company.name == company_name).first()
         if not company:
             return None
-        
+
         # Verificar que existe la relación usuario-empresa y está activa
         company_user = (
             self.db.query(CompanyUser)
             .filter(CompanyUser.user_id == user.id)
-            .filter(CompanyUser.company_id == company.id)
-            .filter(CompanyUser.is_active.is_(True))
+            .filter(CompanyUser.company_id == company.id)           
             .first()
         )
         
-        if not company_user:
+        if not company_user.is_active :
             return None
+        
+        # Verificar la contraseña recibida contra el hash almacenado
+        if not verify_password(password, user.hashed_password):
+            return None  
         
         return user, str(company.id)
     
@@ -449,7 +441,7 @@ class AuthService:
             
             # Generar token de reset
             security_service = SecurityService(self.db)
-            reset_token = security_service.generate_password_reset_token(email)
+            reset_token = security_service.generate_password_reset_token(email,str(company_user.company_id) )
             
             # Enviar email
             email_service = EmailService()
@@ -484,14 +476,17 @@ class AuthService:
         try:
             # Verificar token
             security_service = SecurityService(self.db)
-            email = security_service.verify_password_reset_token(token)
+            email , company_id = security_service.verify_password_reset_token(token)
             
             if not email:
                 return False, "Token inválido o expirado"
             
             # Buscar usuario
             user = self.db.query(AppUser).filter(AppUser.email == email).first()
-            if not user or not user.is_active:
+            # Buscar relación usuario-compañía
+            company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user.id).filter(CompanyUser.company_id == company_id).first()
+
+            if not user or not company_user.is_active:
                 return False, "Usuario no encontrado o inactivo"
             
             # Validar fortaleza de contraseña
@@ -532,14 +527,15 @@ class AuthService:
         try:
             # Verificar token
             security_service = SecurityService(self.db)
-            email = security_service.verify_password_reset_token(token)
+            email, company_id   = security_service.verify_password_reset_token(token)
             
             if not email:
                 return None
             
             # Buscar usuario
             user = self.db.query(AppUser).filter(AppUser.email == email).first()
-            if not user or not user.is_active:
+            company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user.id).filter(CompanyUser.company_id == company_id).first()
+            if not user or not company_user.is_active:
                 return None
             
             # Decodificar token para obtener expiración
@@ -557,7 +553,7 @@ class AuthService:
             user_info = {
                 "email": user.email,
                 "name": user.name,
-                "is_verified": user.is_verified
+                "is_verified": company_user.is_verified
             }
             
             return user_info, expires_at
