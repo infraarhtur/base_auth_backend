@@ -245,7 +245,7 @@ class AuthService:
             
             return user
             
-        except Exception as e   :
+        except Exception as e:
             print(f"Error en get_current_user_from_token: {e}")
             return None
     
@@ -591,34 +591,36 @@ class AuthService:
         except Exception as e:
             print(f"Error invalidando token de reset: {e}")
     
-    def request_email_verification(self, email: str) -> bool:
+    def request_email_verification(self, email: str,company_id: str) -> bool:
         """
         Solicitar verificación de email
         
         Args:
             email: Email del usuario
-            
+            company_id: ID de la empresa
         Returns:
             True si se procesó la solicitud correctamente
         """
         try:
             # Buscar usuario por email
             user = self.db.query(AppUser).filter(AppUser.email == email).first()
+
+            company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user.id).filter(CompanyUser.company_id == company_id).first()
             
             if not user:
                 # Por seguridad, no revelamos si el email existe o no
                 return True
             
-            if not user.is_active:
+            if not company_user:
                 return True
             
             # Verificar si ya está verificado
-            if user.is_verified:
+            if company_user.is_verified:
                 return True
             
             # Generar token de verificación
             security_service = SecurityService(self.db)
-            verification_token = security_service.generate_email_verification_token(email)
+            verification_token = security_service.generate_email_verification_token(email,str(company_id))
             
             # Enviar email
             email_service = EmailService()
