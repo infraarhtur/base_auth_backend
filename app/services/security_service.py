@@ -129,7 +129,8 @@ class SecurityService:
                 return None
             
             return payload
-        except JWTError:
+        except JWTError as e:
+            print(f"Error en verify_access_token: {e}")
             return None
     
     def _is_token_blacklisted(self, token: str) -> bool:

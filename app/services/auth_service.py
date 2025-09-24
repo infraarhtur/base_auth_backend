@@ -237,20 +237,10 @@ class AuthService:
                 return None
             
             # Obtener usuario
-            user =  (
-    self.db.query(AppUser)
-    .options(
-        joinedload(AppUser.roles).joinedload(UserRole.role)
-    )
-    .join(CompanyUser, AppUser.id == CompanyUser.user_id)
-    .filter(
-        AppUser.id == user_id,
-        CompanyUser.company_id == company_id,
-        CompanyUser.is_active == True
-    )
-    .first()
-)
-            if not user or not user.is_active:
+            user = self.db.query(AppUser).filter(AppUser.id == user_id).first()
+            company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user_id).filter(CompanyUser.company_id == company_id).first()
+
+            if not company_user or not company_user.is_active:
                 return None
             
             return user
