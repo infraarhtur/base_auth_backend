@@ -240,3 +240,29 @@ async def change_password(
         )
     
     return SuccessResponse(message="Contraseña cambiada correctamente")
+
+
+@router.put("/{user_id}/activate_user", response_model=SuccessResponse, summary="Activar  usuario")
+async def activate_user(
+    user_id: str, 
+    user_service = Depends(get_user_service),
+    company_id: str = Depends(get_current_company_id),
+    _: bool = Depends(require_user_update)
+):
+    """
+    Actualizar usuario
+    
+    - **user_id**: ID del usuario  
+    
+    Returns:
+        Usuario actualizado
+    """
+
+    success = user_service.activate_user(user_id, company_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+    return SuccessResponse(message="Usuario activado correctamente")
+

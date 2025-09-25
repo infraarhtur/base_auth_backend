@@ -395,3 +395,18 @@ class UserService:
             }
             for cu in companies
         ] 
+
+    def activate_user(self, user_id: str, company_id: str) -> bool:
+        """
+        Activar usuario
+        
+        Args:
+            user_id: ID del usuario
+            company_id: ID de la compañía
+        """
+        company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user_id, CompanyUser.company_id == company_id).first()
+        if not company_user:
+            return False
+        company_user.is_active = True
+        self.db.commit()
+        return True

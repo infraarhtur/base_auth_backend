@@ -276,7 +276,7 @@ class SecurityService:
         return jwt.encode(data, settings.security.secret_key, algorithm=settings.security.algorithm)
     
     @staticmethod
-    def verify_email_verification_token(token: str) -> Optional[str]:
+    def verify_email_verification_token(token: str) -> Optional[tuple[str,str]]:
         """
         Verificar token de verificación de email
         
@@ -292,7 +292,13 @@ class SecurityService:
             # Verificar que es un token de verificación de email
             if payload.get("type") != "email_verification":
                 return None
+            email = payload.get("email")
+            company_id = payload.get("company_id")
+            print(f"email: {email}, company_id: {company_id}")
+            if email and company_id:
+                return email, company_id
+            else:
+                return None
             
-            return payload.get("email")
         except JWTError:
             return None 

@@ -31,7 +31,7 @@ class UserRead(BaseResponse):
     role: Optional[str] = Field(None, description="Rol del usuario en la compañía")
     name: str = Field(..., description="Nombre del usuario")
     email: str = Field(..., description="Email del usuario")
-    is_active: bool = Field(..., description="Estado activo del usuario")
+    #is_active: bool = Field(..., description="Estado activo del usuario")
     
     class Config:
         from_attributes = True

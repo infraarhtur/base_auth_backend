@@ -654,22 +654,24 @@ class AuthService:
         try:
             # Verificar token
             security_service = SecurityService(self.db)
-            email = security_service.verify_email_verification_token(token)
+            email , company_id = security_service.verify_email_verification_token(token)
             
             if not email:
                 return False
             
             # Buscar usuario
             user = self.db.query(AppUser).filter(AppUser.email == email).first()
-            if not user or not user.is_active:
+
+            company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user.id).filter(CompanyUser.company_id == company_id).first()
+            if not user or not company_user.is_active:
                 return False
             
             # Verificar si ya está verificado
-            if user.is_verified:
+            if company_user.is_verified:
                 return True
             
             # Marcar como verificado
-            user.is_verified = True
+            company_user.is_verified = True
             self.db.commit()
             
             print(f"✅ Email verificado para {email}")
