@@ -182,7 +182,7 @@ class EmailService:
         Returns:
             Template HTML del email
         """
-        verification_url = f"{self.app_base_url}{settings.email.email_verification_url}?token={token}"
+        verification_url = f"{self.app_base_url}{settings.email.email_verification_url}/{token}"
         
         return f"""
         <!DOCTYPE html>

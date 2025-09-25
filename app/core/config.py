@@ -111,7 +111,7 @@ class EmailSettings(BaseSettings):
         description="URL para confirmar reset de contraseña"
     )
     email_verification_url: str = Field(
-        default="/auth/email-verification/confirm",
+        default="email-validate",
         alias="EMAIL_VERIFICATION_URL",
         description="URL para confirmar verificación de email"
     )

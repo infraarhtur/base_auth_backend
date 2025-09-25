@@ -37,11 +37,11 @@ class UserService:
             HTTPException: Si el email ya existe, la compañía no existe, o el rol no existe
         """
         user_data.name = user_data.name.lower()
-        user_data.company_name = user_data.company_name.lower()
+        user_data.company_id= user_data.company_id.lower()
         user_data.email = user_data.email.lower()
-        user_data.rol = user_data.rol.lower()
+        user_data.role = user_data.role.lower()
         # Buscar la compañía por nombre
-        company = self.db.query(Company).filter(Company.name == user_data.company_name).first()
+        company = self.db.query(Company).filter(Company.id == user_data.company_id).first()
         if not company:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -71,7 +71,7 @@ class UserService:
             self.db.query(Role)
             .filter(
                 and_(
-                    Role.name == user_data.rol,
+                    Role.name == user_data.role,
                     Role.company_id == company.id
                 )
             )
@@ -231,20 +231,20 @@ class UserService:
                 )
             )
         
-        if is_active is not None:
-            query = query.filter(AppUser.is_active == is_active)
+       
         
         #print(query.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
         
         return query.offset(skip).limit(limit).all()
     
-    def update_user(self, user_id: str, user_data: UserUpdate) -> Optional[AppUser]:
+    def update_user(self, user_id: str, user_data: UserUpdate,company_id: str) -> Optional[AppUser]:
         """
         Actualizar usuario
         
         Args:
             user_id: ID del usuario
             user_data: Datos a actualizar
+            company_id: ID de la compañía
             
         Returns:
             Usuario actualizado si existe, None si no
@@ -256,30 +256,71 @@ class UserService:
         if not user:
             return None
         
-  
-        # Actualizar campos
-        update_data = user_data.dict(exclude_unset=True)
+        # Verificar que el usuario pertenece a la compañía
+        company_user = self.db.query(CompanyUser).filter(
+            CompanyUser.user_id == user_id,
+            CompanyUser.company_id == company_id
+        ).first()
+        if not company_user:
+            return None
+        
+        # Actualizar campos del usuario (excluyendo el rol)
+        update_data = user_data.dict(exclude_unset=True, exclude={'role'})
         for field, value in update_data.items():
             setattr(user, field, value)
+        
+        # Actualizar el rol del usuario en la compañía si se proporciona
+        if user_data.role is not None:
+            # Verificar que el rol existe en la compañía
+            role = self.db.query(Role).filter(
+                Role.name == user_data.role,
+                Role.company_id == company_id
+            ).first()
+            if not role:
+                return None
+            
+            # Verificar si el usuario ya tiene este rol en esta compañía
+            current_user_role = self.db.query(UserRole).join(Role).filter(
+                UserRole.user_id == user_id,
+                Role.company_id == company_id
+            ).first()
+            
+            # Si el usuario ya tiene un rol diferente, eliminarlo
+            if current_user_role and current_user_role.role_id != role.id:
+                self.db.delete(current_user_role)
+                # Crear la nueva relación usuario-rol
+                new_user_role = UserRole(
+                    user_id=user_id,
+                    role_id=role.id
+                )
+                self.db.add(new_user_role)
+            # Si el usuario no tiene ningún rol, asignar el nuevo
+            elif not current_user_role:
+                new_user_role = UserRole(
+                    user_id=user_id,
+                    role_id=role.id
+                )
+                self.db.add(new_user_role)
+            # Si el usuario ya tiene este mismo rol, no hacer nada
         
         self.db.commit()
         self.db.refresh(user)
         
         return user
     
-    def delete_user(self, user_id: str, company_name: str) -> bool:
+    def delete_user(self, user_id: str, company_id: str) -> bool:
         """
         Eliminar usuario de una compañía específica (soft delete)
         
         Args:
             user_id: ID del usuario
-            company_name: Nombre de la compañía
             
+            company_id: ID de la compañía
         Returns:
             True si se eliminó, False si no existe la relación
         """
         # Obtener la compañía por nombre
-        company = self.db.query(Company).filter(Company.name == company_name).first()
+        company = self.db.query(Company).filter(Company.id == company_id).first()
         if not company:
             return False
         
@@ -354,3 +395,18 @@ class UserService:
             }
             for cu in companies
         ] 
+
+    def activate_user(self, user_id: str, company_id: str) -> bool:
+        """
+        Activar usuario
+        
+        Args:
+            user_id: ID del usuario
+            company_id: ID de la compañía
+        """
+        company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user_id, CompanyUser.company_id == company_id).first()
+        if not company_user:
+            return False
+        company_user.is_active = True
+        self.db.commit()
+        return True

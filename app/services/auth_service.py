@@ -4,7 +4,7 @@ Servicio de autenticación - Login, logout y gestión de tokens
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 
 from app.models.user import AppUser
@@ -12,6 +12,8 @@ from app.models.user_role import UserRole
 from app.models.role_permission import RolePermission
 from app.models.permission import Permission
 from app.models.role import Role
+from app.models.company_user import CompanyUser
+from app.models.company import Company
 from app.schemas.auth import Token, TokenData, LoginRequest
 from app.services.security_service import SecurityService
 from app.core.config import get_settings
@@ -46,33 +48,25 @@ class AuthService:
         
         if not user:
             return None
-        
-        # Verificar la contraseña recibida contra el hash almacenado
-        if not verify_password(password, user.hashed_password):
-            return None
-        
-        if not user.is_active:
-            return None
-        
-        # Verificar que el usuario pertenece a la empresa especificada
-        from app.models.company import Company
-        from app.models.company_user import CompanyUser
-        
+
         company = self.db.query(Company).filter(Company.name == company_name).first()
         if not company:
             return None
-        
+
         # Verificar que existe la relación usuario-empresa y está activa
         company_user = (
             self.db.query(CompanyUser)
             .filter(CompanyUser.user_id == user.id)
-            .filter(CompanyUser.company_id == company.id)
-            .filter(CompanyUser.is_active.is_(True))
+            .filter(CompanyUser.company_id == company.id)           
             .first()
         )
         
-        if not company_user:
+        if not company_user.is_active :
             return None
+        
+        # Verificar la contraseña recibida contra el hash almacenado
+        if not verify_password(password, user.hashed_password):
+            return None  
         
         return user, str(company.id)
     
@@ -236,18 +230,23 @@ class AuthService:
             # Verificar token (incluye verificación de blacklist)
             payload = security_service.verify_access_token(token)
             user_id = payload.get("user_id")
+            company_id = payload.get("company_id")
+            company_name = payload.get("company_name")
             
             if not user_id:
                 return None
             
             # Obtener usuario
             user = self.db.query(AppUser).filter(AppUser.id == user_id).first()
-            if not user or not user.is_active:
+            company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user_id).filter(CompanyUser.company_id == company_id).first()
+
+            if not company_user or not company_user.is_active:
                 return None
             
             return user
             
-        except Exception:
+        except Exception as e:
+            print(f"Error en get_current_user_from_token: {e}")
             return None
     
     def logout(self, refresh_token: str, access_token: str = None) -> bool:
@@ -402,13 +401,13 @@ class AuthService:
         except Exception as e:
             print(f"Error invalidando tokens de acceso: {e}")
     
-    def request_password_reset(self, email: str) -> bool:
+    def request_password_reset(self, email: str,company_name: str ) -> bool:
         """
         Solicitar reset de contraseña
         
         Args:
             email: Email del usuario
-            
+            company_name: Nombre de la compañía
         Returns:
             True si se procesó la solicitud correctamente
         """
@@ -420,12 +419,19 @@ class AuthService:
                 # Por seguridad, no revelamos si el email existe o no
                 return True
             
-            if not user.is_active:
-                return True
+            company = self.db.query(Company).filter(Company.name == company_name).first()
+
+            if not company:
+                return False
+
+            company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user.id).filter(CompanyUser.company_id == company.id).first()
+
+            if not company_user:
+                return False
             
             # Generar token de reset
             security_service = SecurityService(self.db)
-            reset_token = security_service.generate_password_reset_token(email)
+            reset_token = security_service.generate_password_reset_token(email,str(company_user.company_id) )
             
             # Enviar email
             email_service = EmailService()
@@ -460,14 +466,17 @@ class AuthService:
         try:
             # Verificar token
             security_service = SecurityService(self.db)
-            email = security_service.verify_password_reset_token(token)
+            email , company_id = security_service.verify_password_reset_token(token)
             
             if not email:
                 return False, "Token inválido o expirado"
             
             # Buscar usuario
             user = self.db.query(AppUser).filter(AppUser.email == email).first()
-            if not user or not user.is_active:
+            # Buscar relación usuario-compañía
+            company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user.id).filter(CompanyUser.company_id == company_id).first()
+
+            if not user or not company_user.is_active:
                 return False, "Usuario no encontrado o inactivo"
             
             # Validar fortaleza de contraseña
@@ -508,14 +517,15 @@ class AuthService:
         try:
             # Verificar token
             security_service = SecurityService(self.db)
-            email = security_service.verify_password_reset_token(token)
+            email, company_id   = security_service.verify_password_reset_token(token)
             
             if not email:
                 return None
             
             # Buscar usuario
             user = self.db.query(AppUser).filter(AppUser.email == email).first()
-            if not user or not user.is_active:
+            company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user.id).filter(CompanyUser.company_id == company_id).first()
+            if not user or not company_user.is_active:
                 return None
             
             # Decodificar token para obtener expiración
@@ -533,7 +543,7 @@ class AuthService:
             user_info = {
                 "email": user.email,
                 "name": user.name,
-                "is_verified": user.is_verified
+                "is_verified": company_user.is_verified
             }
             
             return user_info, expires_at
@@ -581,34 +591,36 @@ class AuthService:
         except Exception as e:
             print(f"Error invalidando token de reset: {e}")
     
-    def request_email_verification(self, email: str) -> bool:
+    def request_email_verification(self, email: str,company_id: str) -> bool:
         """
         Solicitar verificación de email
         
         Args:
             email: Email del usuario
-            
+            company_id: ID de la empresa
         Returns:
             True si se procesó la solicitud correctamente
         """
         try:
             # Buscar usuario por email
             user = self.db.query(AppUser).filter(AppUser.email == email).first()
+
+            company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user.id).filter(CompanyUser.company_id == company_id).first()
             
             if not user:
                 # Por seguridad, no revelamos si el email existe o no
                 return True
             
-            if not user.is_active:
+            if not company_user:
                 return True
             
             # Verificar si ya está verificado
-            if user.is_verified:
+            if company_user.is_verified:
                 return True
             
             # Generar token de verificación
             security_service = SecurityService(self.db)
-            verification_token = security_service.generate_email_verification_token(email)
+            verification_token = security_service.generate_email_verification_token(email,str(company_id))
             
             # Enviar email
             email_service = EmailService()
@@ -642,22 +654,24 @@ class AuthService:
         try:
             # Verificar token
             security_service = SecurityService(self.db)
-            email = security_service.verify_email_verification_token(token)
+            email , company_id = security_service.verify_email_verification_token(token)
             
             if not email:
                 return False
             
             # Buscar usuario
             user = self.db.query(AppUser).filter(AppUser.email == email).first()
-            if not user or not user.is_active:
+
+            company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user.id).filter(CompanyUser.company_id == company_id).first()
+            if not user or not company_user.is_active:
                 return False
             
             # Verificar si ya está verificado
-            if user.is_verified:
+            if company_user.is_verified:
                 return True
             
             # Marcar como verificado
-            user.is_verified = True
+            company_user.is_verified = True
             self.db.commit()
             
             print(f"✅ Email verificado para {email}")

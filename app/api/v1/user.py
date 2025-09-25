@@ -7,9 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from app.api.deps import (
+    get_current_user,
     get_db, 
     get_user_service, 
     get_current_active_user,
+    get_current_company_id,
     require_user_read,
     require_user_create,
     require_user_update,
@@ -41,8 +43,8 @@ async def create_user(
     - **name**: Nombre del usuario
     - **email**: Email del usuario
     - **password**: Contraseña del usuario
-    - **company_name**: Nombre de la compañía
-    - **rol**: Rol del usuario en la compañía
+    - **company_id**: Id de la compañía
+    - **role**: Rol del usuario en la compañía
     
     Returns:
         Usuario creado
@@ -148,6 +150,7 @@ async def update_user(
     user_id: str,
     user_data: UserUpdate,
     user_service = Depends(get_user_service),
+    company_id: str = Depends(get_current_company_id),
     _: bool = Depends(require_user_update)
 ):
     """
@@ -159,7 +162,9 @@ async def update_user(
     Returns:
         Usuario actualizado
     """
-    user = user_service.update_user(user_id, user_data)
+
+
+    user = user_service.update_user(user_id, user_data,company_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -168,23 +173,22 @@ async def update_user(
     return user
 
 
-@router.delete("/{user_id}/{company_name}", response_model=SuccessResponse, summary="Eliminar usuario")
+@router.delete("/{user_id}", response_model=SuccessResponse, summary="Eliminar usuario")
 async def delete_user(
-    user_id: str,
-    company_name: str,
+    user_id: str,    
     user_service = Depends(get_user_service),
+    company_id: str = Depends(get_current_company_id),
     _: bool = Depends(require_user_delete)
 ):
     """
     Eliminar usuario (soft delete)
     
-    - **user_id**: ID del usuario
-    - **company_name**: Nombre de la compañía
+    - **user_id**: ID del usuario  
     
     Returns:
         Confirmación de eliminación
     """
-    success = user_service.delete_user(user_id, company_name)
+    success = user_service.delete_user(user_id, company_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -236,3 +240,29 @@ async def change_password(
         )
     
     return SuccessResponse(message="Contraseña cambiada correctamente")
+
+
+@router.put("/{user_id}/activate_user", response_model=SuccessResponse, summary="Activar  usuario")
+async def activate_user(
+    user_id: str, 
+    user_service = Depends(get_user_service),
+    company_id: str = Depends(get_current_company_id),
+    _: bool = Depends(require_user_update)
+):
+    """
+    Actualizar usuario
+    
+    - **user_id**: ID del usuario  
+    
+    Returns:
+        Usuario actualizado
+    """
+
+    success = user_service.activate_user(user_id, company_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+    return SuccessResponse(message="Usuario activado correctamente")
+
