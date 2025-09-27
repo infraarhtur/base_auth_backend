@@ -15,7 +15,8 @@ from app.api.deps import (
     require_role_update,
     require_role_delete,
     require_permission_read,
-    require_permission_assign
+    require_permission_assign,
+    get_current_company_id
 )
 from app.schemas.role import (
     RoleCreate, 
@@ -58,17 +59,17 @@ async def create_role(
 async def get_roles(
     skip: int = Query(0, ge=0, description="Registros a saltar"),
     limit: int = Query(10, ge=1, le=100, description="Límite de registros"),
-    company_id: Optional[str] = Query(None, description="Filtrar por empresa"),
+   
     search: Optional[str] = Query(None, description="Término de búsqueda"),
     role_service = Depends(get_role_service),
+    company_id: str = Depends(get_current_company_id),
     _: bool = Depends(require_role_read)
 ):
     """
     Obtener lista de roles con filtros
     
     - **skip**: Número de registros a saltar
-    - **limit**: Límite de registros (máximo 100)
-    - **company_id**: Filtrar por empresa
+    - **limit**: Límite de registros (máximo 100)    
     - **search**: Término de búsqueda en nombre
     
     Returns:
