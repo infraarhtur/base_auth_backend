@@ -94,6 +94,31 @@ async def get_roles(
     )
 
 
+@router.get("/all_sections_with_permissions", 
+response_model=SuccessResponse, 
+summary="Listar secciones de secciones con permisos")
+async def get_all_sections_with_permissions(
+    role_service = Depends(get_role_service) ,
+    _: bool = Depends(require_role_read)
+):
+    """
+    Obtener l Lista de secciones con permisos   
+
+    
+    Returns:
+        Lista de secciones con permisos
+    """
+    seccions= role_service.get_all_sections_with_permissions()
+    
+    if not seccions:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="El usuario no tiene asignado este rol"
+            )
+    
+    return SuccessResponse(message="Secciones con permisos obtenidas correctamente", data=seccions)
+
+
 @router.get("/{role_id}", response_model=RoleRead, summary="Obtener rol")
 async def get_role(
     role_id: str,
@@ -282,4 +307,4 @@ async def get_role_permissions(
         Lista de permisos del rol
     """
     permissions = role_service.get_role_permissions(role_id)
-    return {"permissions": permissions} 
+    return {"permissions": permissions}
