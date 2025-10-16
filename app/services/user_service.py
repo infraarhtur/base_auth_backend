@@ -127,7 +127,7 @@ class UserService:
         """
         return self.db.query(AppUser).filter(AppUser.id == user_id).first()
     
-    def get_user_by_id_with_company_roles(self, user_id: str, company_name: str) -> Optional[Dict[str, Any]]:
+    def get_user_by_id_with_company_roles(self, user_id: str,  company_id: str) -> Optional[Dict[str, Any]]:
         """
         Obtener usuario por ID con sus roles en una compañía específica
         
@@ -139,7 +139,7 @@ class UserService:
             Diccionario con información del usuario y sus roles en la compañía, None si no existe
         """
         # Buscar la compañía por nombre
-        company = self.db.query(Company).filter(Company.name == company_name).first()
+        company = self.db.query(Company).filter(Company.id == company_id).first()
         if not company:
             return None
         
@@ -183,7 +183,7 @@ class UserService:
             "id": str(user.id),
             "name": user.name,
             "email": user.email,
-            "is_active": user.is_active,
+            "is_active": user.companies[0].is_active,
             "created_at": user.created_at,
             "company_name": company.name,
             "roles": role_names
