@@ -120,23 +120,22 @@ async def get_user_companies(
     return {"companies": companies}
 
 
-@router.get("/{user_id}/{company_name}", response_model=UserWithRoles, summary="Obtener usuario")
+@router.get("/{user_id}", response_model=UserWithRoles, summary="Obtener usuario")
 async def get_user(
-    user_id: str,
-    company_name: str,
+    user_id: str,  
     user_service = Depends(get_user_service),
+    company_id: str = Depends(get_current_company_id),
     _: bool = Depends(require_user_read)
 ):
     """
     Obtener usuario por ID con sus roles en una compañía específica
     
-    - **user_id**: ID del usuario
-    - **company_name**: Nombre de la compañía
+    - **user_id**: ID del usuario   
     
     Returns:
         Usuario encontrado con sus roles en la compañía
     """
-    user_data = user_service.get_user_by_id_with_company_roles(user_id, company_name)
+    user_data = user_service.get_user_by_id_with_company_roles(user_id,  company_id)
     if not user_data:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

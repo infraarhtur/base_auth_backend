@@ -15,7 +15,8 @@ from app.api.deps import (
     require_role_update,
     require_role_delete,
     require_permission_read,
-    require_permission_assign
+    require_permission_assign,
+    get_current_company_id
 )
 from app.schemas.role import (
     RoleCreate, 
@@ -58,17 +59,17 @@ async def create_role(
 async def get_roles(
     skip: int = Query(0, ge=0, description="Registros a saltar"),
     limit: int = Query(10, ge=1, le=100, description="Límite de registros"),
-    company_id: Optional[str] = Query(None, description="Filtrar por empresa"),
+   
     search: Optional[str] = Query(None, description="Término de búsqueda"),
     role_service = Depends(get_role_service),
+    company_id: str = Depends(get_current_company_id),
     _: bool = Depends(require_role_read)
 ):
     """
     Obtener lista de roles con filtros
     
     - **skip**: Número de registros a saltar
-    - **limit**: Límite de registros (máximo 100)
-    - **company_id**: Filtrar por empresa
+    - **limit**: Límite de registros (máximo 100)    
     - **search**: Término de búsqueda en nombre
     
     Returns:
@@ -91,6 +92,31 @@ async def get_roles(
         size=limit,
         pages=(total + limit - 1) // limit
     )
+
+
+@router.get("/all_sections_with_permissions", 
+response_model=SuccessResponse, 
+summary="Listar secciones de secciones con permisos")
+async def get_all_sections_with_permissions(
+    role_service = Depends(get_role_service) ,
+    _: bool = Depends(require_role_read)
+):
+    """
+    Obtener l Lista de secciones con permisos   
+
+    
+    Returns:
+        Lista de secciones con permisos
+    """
+    seccions= role_service.get_all_sections_with_permissions()
+    
+    if not seccions:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="El usuario no tiene asignado este rol"
+            )
+    
+    return SuccessResponse(message="Secciones con permisos obtenidas correctamente", data=seccions)
 
 
 @router.get("/{role_id}", response_model=RoleRead, summary="Obtener rol")
@@ -281,4 +307,4 @@ async def get_role_permissions(
         Lista de permisos del rol
     """
     permissions = role_service.get_role_permissions(role_id)
-    return {"permissions": permissions} 
+    return {"permissions": permissions}

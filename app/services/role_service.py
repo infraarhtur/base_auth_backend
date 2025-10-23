@@ -13,6 +13,7 @@ from app.models.user_role import UserRole
 from app.models.role_permission import RolePermission
 from app.schemas.role import RoleCreate, RoleUpdate, RoleRead
 from app.models.user import AppUser
+from collections import defaultdict
 
 
 class RoleWithPermissions:
@@ -387,3 +388,40 @@ class RoleService:
             Lista de todos los permisos
         """
         return self.db.query(Permission).all() 
+
+
+    def get_all_sections_with_permissions(self) -> dict:
+        """
+        Obtener todas las secciones con permisos como diccionario
+        """
+        seccions = self.db.query(Permission).all()
+            
+            # Convertir a diccionario usando el ID como clave
+            #   sections_dict = {permission.id: {
+                #    'id': permission.id,
+                #'name': permission.name
+            #  } for permission in seccions}
+
+
+        sections_dict = defaultdict(list)
+
+        for permission in seccions:
+            if ":" in permission.name:
+                category, action = permission.name.split(":", 1)
+            else:
+                category, action = permission.name, permission.name  # fallback
+
+            sections_dict[category].append({
+                "id": str(permission.id),
+                "name": action
+            })
+
+        # ordenar categorías y acciones dentro de cada categoría
+        organized = {
+            category: sorted(permissions, key=lambda x: x["name"])
+            for category, permissions in sorted(sections_dict.items())
+        }
+        return organized
+
+        
+   

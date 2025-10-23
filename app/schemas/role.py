@@ -8,6 +8,7 @@ from pydantic import Field
 from .permission import PermissionRead
 
 from .base import BaseSchema
+import json
 
 
 class RoleBaseResponse(BaseSchema):
@@ -37,6 +38,8 @@ class RoleRead(RoleBaseResponse):
     name: str = Field(..., description="Nombre del rol")
     company_id: Optional[uuid.UUID] = Field(None, description="ID de la empresa")
     permissions: List["PermissionRead"] = Field(default=[], description="Permisos del rol")
+
+    
 
     
     class Config:
