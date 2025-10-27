@@ -197,9 +197,10 @@ class AuthService:
                     detail="Token de refresco inválido"
                 )
             
+            company_user = self.db.query(CompanyUser).filter(CompanyUser.user_id == user_id).filter(CompanyUser.company_id == company_id).first()
             # Obtener usuario
             user = self.db.query(AppUser).filter(AppUser.id == user_id).first()
-            if not user or not user.is_active:
+            if not user or not company_user.is_active:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Usuario no encontrado o inactivo"
