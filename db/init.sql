@@ -79,6 +79,7 @@ CREATE TABLE public.company_user (
 	company_id uuid NOT NULL,
 	user_id uuid NOT NULL,
 	is_active bool DEFAULT true NOT NULL,
+	is_verified bool DEFAULT false NOT NULL,
 	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	CONSTRAINT company_user_pkey PRIMARY KEY (company_id, user_id),
 	CONSTRAINT company_user_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.company(id) ON DELETE CASCADE,
