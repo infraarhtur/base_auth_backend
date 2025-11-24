@@ -1,6 +1,6 @@
 INSERT INTO public.app_user (id,"name",email,hashed_password,is_active,created_at,is_verified) VALUES	
-	 ('10000000-0000-0000-0000-000000000003'::uuid,'Charlie Admin','user2inventory@yopmail.com','$2b$12$WUGJERnKC0VMPgy9o/Z1E.OZpc6PqT6Z1bmXnwdsuwnWQZPePP7Sy',true,'2025-07-30 17:53:31.574559-05',false),	 
-	 ('10000000-0000-0000-0000-000000000001'::uuid,'Alice Smith','primerusuario@yopmail.com','$2b$12$Dpq2qaJmsMWnBEVKWbaZs.GFHxDTer15IczQI4S26XmcM2RkDTeoy',true,'2025-07-30 17:53:31.574559-05',true);
+	 ('10000000-0000-0000-0000-000000000003'::uuid,'Arhtur Monsalve','lacasadearhtur@yopmail.com','$2b$12$UTw6iQPYZNT.iZhw8gJLSur7ato4/OvaXj0LMpFkU/S1d6ZBlLT3G',true,'2025-07-30 17:53:31.574559-05',false),	 
+	 ('10000000-0000-0000-0000-000000000001'::uuid,'Alice Smith','primerusuario@yopmail.com','$2b$12$UTw6iQPYZNT.iZhw8gJLSur7ato4/OvaXj0LMpFkU/S1d6ZBlLT3G',true,'2025-07-30 17:53:31.574559-05',true);
 
 
 INSERT INTO public.company (id,"name",created_at,is_active) VALUES
