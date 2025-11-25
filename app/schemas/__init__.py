@@ -3,7 +3,14 @@ Esquemas Pydantic v2 para la aplicación base_auth_backend
 """
 
 from .base import BaseSchema, BaseResponse, ErrorResponse
-from .company import CompanyCreate, CompanyRead, CompanyUpdate, CompanyList
+from .company import (
+    CompanyCreate, 
+    CompanyRead, 
+    CompanyUpdate, 
+    CompanyList,
+    CompanyWithUserCreate,
+    CompanyWithUserResponse
+)
 from .user import UserCreate, UserRead, UserUpdate, UserList, UserLogin
 from .auth import Token, TokenData, LoginRequest, RefreshRequest
 from .role import RoleCreate, RoleRead, RoleUpdate, RoleList
@@ -18,6 +25,8 @@ __all__ = [
     "CompanyRead",
     "CompanyUpdate",
     "CompanyList",
+    "CompanyWithUserCreate",
+    "CompanyWithUserResponse",
     "UserCreate",
     "UserRead", 
     "UserUpdate",

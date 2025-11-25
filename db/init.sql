@@ -79,6 +79,7 @@ CREATE TABLE public.company_user (
 	company_id uuid NOT NULL,
 	user_id uuid NOT NULL,
 	is_active bool DEFAULT true NOT NULL,
+	is_verified bool DEFAULT false NOT NULL,
 	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	CONSTRAINT company_user_pkey PRIMARY KEY (company_id, user_id),
 	CONSTRAINT company_user_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.company(id) ON DELETE CASCADE,
@@ -227,3 +228,82 @@ AS SELECT cu.company_id,
      JOIN role r ON r.id = ur.role_id AND r.company_id = cu.company_id
      JOIN role_permission rp ON rp.role_id = r.id
      JOIN permission p ON p.id = rp.permission_id;
+
+
+
+	--DROP FUNCTION public.create_company_with_user(text, text, text);
+-- Stored Procedure para crear una empresa con un usuario
+-- Crea un rol admin relacionado a la empresa y le asigna todos los permisos disponibles
+
+CREATE OR REPLACE FUNCTION create_company_with_user(
+    p_company_name TEXT,
+    p_user_name TEXT,
+    p_user_email TEXT
+)
+RETURNS TABLE(
+    out_company_id UUID,
+    out_user_id UUID,
+    out_admin_role_id UUID
+) AS $$
+DECLARE
+    v_company_id UUID;
+    v_user_id UUID;
+    v_admin_role_id UUID;
+    v_default_password TEXT := '$2b$12$TvsnnETjWySbme734iV00u7YmZul14Af1.crhsJXoq9OrXvVWOnXa';
+    v_permission_record RECORD;
+BEGIN
+    -- Verificar que el email no existe
+    IF EXISTS (SELECT 1 FROM app_user WHERE email = p_user_email) THEN
+        RAISE EXCEPTION 'El email % ya está registrado', p_user_email;
+    END IF;
+
+    -- Verificar que no exista una empresa con el mismo nombre
+    IF EXISTS (SELECT 1 FROM company WHERE "name" = p_company_name) THEN
+        RAISE EXCEPTION 'Ya existe una empresa con el nombre %', p_company_name;
+    END IF;
+
+    -- Crear la empresa
+    INSERT INTO company ("name", is_active, created_at)
+    VALUES (p_company_name, true, CURRENT_TIMESTAMP)
+    RETURNING id INTO v_company_id;
+
+    -- Crear el usuario
+    INSERT INTO app_user ("name", email, hashed_password, is_active, is_verified, created_at)
+    VALUES (p_user_name, p_user_email, v_default_password, true, false, CURRENT_TIMESTAMP)
+    RETURNING id INTO v_user_id;
+
+    -- Relacionar el nuevo usuario con la nueva empresa
+    INSERT INTO company_user (company_id, user_id, is_active, is_verified, created_at)
+    VALUES (v_company_id, v_user_id, true, false, CURRENT_TIMESTAMP);
+
+    -- Crear el rol admin para la nueva empresa (relacionado al company_id)
+    INSERT INTO "role" (company_id, "name")
+    VALUES (v_company_id, 'admin')
+    RETURNING id INTO v_admin_role_id;
+
+    -- Relacionar el rol admin a TODOS los permisos disponibles en el sistema
+    FOR v_permission_record IN
+        SELECT id AS permission_id
+        FROM "permission"
+    LOOP
+        INSERT INTO role_permission (role_id, permission_id)
+        VALUES (v_admin_role_id, v_permission_record.permission_id)
+        ON CONFLICT (role_id, permission_id) DO NOTHING;
+    END LOOP;
+
+    -- Asignar el rol admin al nuevo usuario
+    INSERT INTO user_role (user_id, role_id)
+    VALUES (v_user_id, v_admin_role_id)
+    ON CONFLICT (user_id, role_id) DO NOTHING;
+
+    -- Retornar los IDs creados
+    RETURN QUERY
+        SELECT
+            v_company_id      AS out_company_id,
+            v_user_id         AS out_user_id,
+            v_admin_role_id   AS out_admin_role_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Ejemplo de uso:
+--SELECT * FROM create_company_with_user('Mi Empresa de prueba', 'Usuario prueba inventario', 'usuario.inventario@yopmail.com');

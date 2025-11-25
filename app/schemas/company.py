@@ -51,4 +51,20 @@ class CompanyUserRead(BaseSchema):
     is_active: bool = Field(..., description="Estado activo en la empresa")
     
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
+
+class CompanyWithUserCreate(BaseSchema):
+    """Esquema para crear una empresa con un usuario"""
+    
+    company_name: str = Field(..., min_length=1, description="Nombre de la empresa")
+    user_name: str = Field(..., min_length=1, description="Nombre del usuario")
+    user_email: str = Field(..., description="Email del usuario")
+
+
+class CompanyWithUserResponse(BaseSchema):
+    """Esquema para la respuesta de crear empresa con usuario"""
+    
+    company_id: str = Field(..., description="ID de la empresa creada")
+    user_id: str = Field(..., description="ID del usuario creado")
+    admin_role_id: str = Field(..., description="ID del rol admin creado")

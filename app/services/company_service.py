@@ -4,7 +4,7 @@ Servicio de empresas - CRUD y lógica de negocio
 
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 from fastapi import HTTPException, status
 
 from app.models.company import Company
@@ -280,4 +280,82 @@ class CompanyService:
             user_data["roles"] = list(set(user_data["roles"]))  # Eliminar duplicados
             result.append(user_data)
         
-        return result 
+        return result
+    
+    def create_company_with_user(self, company_name: str, user_name: str, user_email: str) -> Dict[str, Any]:
+        """
+        Crear una empresa con un usuario usando la función SQL almacenada
+        
+        Esta función crea:
+        - Una nueva empresa
+        - Un nuevo usuario
+        - Relaciona el usuario con la empresa
+        - Crea un rol admin para la empresa
+        - Asigna todos los permisos al rol admin
+        - Asigna el rol admin al usuario
+        
+        Args:
+            company_name: Nombre de la empresa
+            user_name: Nombre del usuario
+            user_email: Email del usuario
+            
+        Returns:
+            Diccionario con los IDs creados:
+            {
+                "company_id": UUID,
+                "user_id": UUID,
+                "admin_role_id": UUID
+            }
+            
+        Raises:
+            HTTPException: Si el email o nombre de empresa ya existen
+        """
+        try:
+            # Llamar a la función SQL almacenada
+            result = self.db.execute(
+                text("SELECT * FROM create_company_with_user(:company_name, :user_name, :user_email)"),
+                {
+                    "company_name": company_name.lower(),
+                    "user_name": user_name,
+                    "user_email": user_email.lower()
+                }
+            )
+            
+            # Obtener el resultado (la función retorna una fila)
+            row = result.fetchone()
+            
+            if not row:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Error al crear la empresa y usuario"
+                )
+            
+            # Confirmar la transacción
+            self.db.commit()
+            
+            # Retornar los IDs creados
+            # La función retorna: out_company_id, out_user_id, out_admin_role_id
+            return {
+                "company_id": str(row[0]),  # out_company_id
+                "user_id": str(row[1]),     # out_user_id
+                "admin_role_id": str(row[2])  # out_admin_role_id
+            }
+            
+        except Exception as e:
+            # Hacer rollback en caso de error
+            self.db.rollback()
+            
+            # Si es una excepción de PostgreSQL (email o nombre duplicado)
+            error_message = str(e)
+            if "ya está registrado" in error_message or "ya existe" in error_message:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error_message
+                )
+            
+            # Para otros errores, lanzar excepción genérica
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al crear empresa con usuario: {error_message}"
+            )
+
