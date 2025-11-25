@@ -70,13 +70,7 @@ VALUES ('20000000-0000-0000-0000-000000000003'::uuid, '00000000-0000-0000-0000-0
 
 
 INSERT INTO public.role_permission (role_id, permission_id) 
-   VALUES ('06029467-6ab5-4045-a05b-674dd2ef9ad7'::uuid, 'fea3ba35-4489-4fc3-9037-504ea5afa841'::uuid),
-	('06029467-6ab5-4045-a05b-674dd2ef9ad7'::uuid, '320feefe-7467-43e0-83bd-8f5f5c6651bf'::uuid),
-	('06029467-6ab5-4045-a05b-674dd2ef9ad7'::uuid, '1a7ed8b8-aef8-428b-a39b-c9a3678399e7'::uuid),
-	('ba52d1c3-551e-49e0-82dc-6d211aea0e07'::uuid, 'fea3ba35-4489-4fc3-9037-504ea5afa841'::uuid),
-	('ba52d1c3-551e-49e0-82dc-6d211aea0e07'::uuid, '320feefe-7467-43e0-83bd-8f5f5c6651bf'::uuid),
-	('ba52d1c3-551e-49e0-82dc-6d211aea0e07'::uuid, '1a7ed8b8-aef8-428b-a39b-c9a3678399e7'::uuid),
-	('20000000-0000-0000-0000-000000000001'::uuid, 'a1068f79-a1fc-4677-83b8-8fe96ef63be8'::uuid),
+   VALUES ('20000000-0000-0000-0000-000000000001'::uuid, 'a1068f79-a1fc-4677-83b8-8fe96ef63be8'::uuid),
 	('20000000-0000-0000-0000-000000000001'::uuid, 'dc959ecd-da5a-4ec3-a301-24c50b150c96'::uuid),
 	('20000000-0000-0000-0000-000000000001'::uuid, 'e8dc8d5d-c57c-44a7-b34e-f25b3b708924'::uuid),
 	('20000000-0000-0000-0000-000000000001'::uuid, 'ccaa5ea7-c4c4-408c-8234-64da7676a5c0'::uuid),
@@ -122,12 +116,7 @@ INSERT INTO public.role_permission (role_id, permission_id)
 	('20000000-0000-0000-0000-000000000001'::uuid, 'db551fff-8ae1-4519-9d65-50aba907de85'::uuid),
 	('20000000-0000-0000-0000-000000000002'::uuid, 'db170eef-eebe-4634-8fe8-c2e16e65ee13'::uuid),
 	('20000000-0000-0000-0000-000000000002'::uuid, 'd340cb2e-0f9c-437d-96b5-366dbedd1e78'::uuid),
-	('20000000-0000-0000-0000-000000000002'::uuid, 'e8dc8d5d-c57c-44a7-b34e-f25b3b708924'::uuid),
-	('3d8acef0-bf5a-4139-b159-e6e4fdbccafd'::uuid, 'e738ba99-b6b7-44e5-8bac-697389b3415a'::uuid),
-	('3d8acef0-bf5a-4139-b159-e6e4fdbccafd'::uuid, 'ad85e94f-02d1-4d23-9d01-d5d16d07da0c'::uuid),
-	('3d8acef0-bf5a-4139-b159-e6e4fdbccafd'::uuid, '320feefe-7467-43e0-83bd-8f5f5c6651bf'::uuid),
-	('3d8acef0-bf5a-4139-b159-e6e4fdbccafd'::uuid, 'fea3ba35-4489-4fc3-9037-504ea5afa841'::uuid),
-	('3d8acef0-bf5a-4139-b159-e6e4fdbccafd'::uuid, '1a7ed8b8-aef8-428b-a39b-c9a3678399e7'::uuid);
+	('20000000-0000-0000-0000-000000000002'::uuid, 'e8dc8d5d-c57c-44a7-b34e-f25b3b708924'::uuid);
 
 INSERT INTO public.user_role (user_id,role_id) VALUES
 	 ('10000000-0000-0000-0000-000000000001'::uuid,'20000000-0000-0000-0000-000000000001'::uuid),
