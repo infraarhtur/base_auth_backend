@@ -19,7 +19,9 @@ from app.schemas.company import (
     CompanyCreate, 
     CompanyRead, 
     CompanyUpdate, 
-    CompanyList
+    CompanyList,
+    CompanyWithUserCreate,
+    CompanyWithUserResponse
 )
 from app.schemas.response import SuccessResponse
 from app.models.user import AppUser
@@ -44,6 +46,39 @@ async def create_company(
     """
     company = company_service.create_company(company_data)
     return company
+
+
+@router.post("/with-user", response_model=CompanyWithUserResponse, summary="Crear empresa con usuario")
+async def create_company_with_user(
+    data: CompanyWithUserCreate,
+    company_service = Depends(get_company_service),
+    current_user: AppUser = Depends(get_current_active_user),
+    _: bool = Depends(require_company_create)
+):
+    """
+    Crear una nueva empresa con un usuario administrador
+    
+    Esta operación crea:
+    - Una nueva empresa
+    - Un nuevo usuario
+    - Relaciona el usuario con la empresa
+    - Crea un rol admin para la empresa
+    - Asigna todos los permisos al rol admin
+    - Asigna el rol admin al usuario
+    
+    - **company_name**: Nombre de la empresa
+    - **user_name**: Nombre del usuario administrador
+    - **user_email**: Email del usuario administrador
+    
+    Returns:
+        IDs de la empresa, usuario y rol admin creados
+    """
+    result = company_service.create_company_with_user(
+        company_name=data.company_name,
+        user_name=data.user_name,
+        user_email=data.user_email
+    )
+    return CompanyWithUserResponse(**result)
 
 
 @router.get("/", response_model=CompanyList, summary="Listar empresas")
