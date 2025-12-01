@@ -39,6 +39,7 @@ router = APIRouter()
 async def create_role(
     role_data: RoleCreate,
     role_service = Depends(get_role_service),
+    company_id: str = Depends(get_current_company_id),
     _: bool = Depends(require_role_create)
 ):
     """
@@ -51,6 +52,7 @@ async def create_role(
     Returns:
         Rol creado
     """
+    role_data.company_id = company_id
     role = role_service.create_role(role_data)
     return role
 
