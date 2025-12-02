@@ -281,10 +281,12 @@ BEGIN
     VALUES (v_company_id, 'admin')
     RETURNING id INTO v_admin_role_id;
 
-    -- Relacionar el rol admin a TODOS los permisos disponibles en el sistema
+    -- Relacionar el rol admin a TODOS los permisos
+    -- excepto los que contengan 'company:' en el campo name
     FOR v_permission_record IN
         SELECT id AS permission_id
         FROM "permission"
+        WHERE name NOT LIKE '%company:%'
     LOOP
         INSERT INTO role_permission (role_id, permission_id)
         VALUES (v_admin_role_id, v_permission_record.permission_id)
@@ -299,9 +301,9 @@ BEGIN
     -- Retornar los IDs creados
     RETURN QUERY
         SELECT
-            v_company_id      AS out_company_id,
-            v_user_id         AS out_user_id,
-            v_admin_role_id   AS out_admin_role_id;
+            v_company_id    AS out_company_id,
+            v_user_id       AS out_user_id,
+            v_admin_role_id AS out_admin_role_id;
 END;
 $$ LANGUAGE plpgsql;
 

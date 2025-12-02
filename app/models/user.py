@@ -23,6 +23,9 @@ class AppUser(BaseModel):
     # Autenticación
     hashed_password = Column(Text, nullable=False)
     
+    # Estado
+    is_active = Column(Boolean, nullable=False, default=True)
+    
     # Relaciones
     companies = relationship("CompanyUser", back_populates="user", cascade="all, delete-orphan")
     roles = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")

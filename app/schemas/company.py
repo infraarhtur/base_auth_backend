@@ -60,6 +60,7 @@ class CompanyWithUserCreate(BaseSchema):
     company_name: str = Field(..., min_length=1, description="Nombre de la empresa")
     user_name: str = Field(..., min_length=1, description="Nombre del usuario")
     user_email: str = Field(..., description="Email del usuario")
+    company_id: Optional[str] = Field(None, description="ID de la empresa que crea la empresa")
 
 
 class CompanyWithUserResponse(BaseSchema):
