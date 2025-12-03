@@ -62,6 +62,7 @@ CREATE INDEX ix_company_name ON public.company USING btree (name);
 CREATE TABLE public."permission" (
 	id uuid DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
+    is_super_admin boolean NOT NULL DEFAULT false,
 	CONSTRAINT permission_pkey PRIMARY KEY (id),
 	CONSTRAINT uq_permission_name UNIQUE (name)
 );
