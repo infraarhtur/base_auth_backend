@@ -100,17 +100,21 @@ async def get_roles(
 response_model=SuccessResponse, 
 summary="Listar secciones de secciones con permisos")
 async def get_all_sections_with_permissions(
+    is_admin: Optional[bool] = Query(None, description="Si es True retorna todos los permisos, si es False excluye permisos de super admin"),
     role_service = Depends(get_role_service) ,
     _: bool = Depends(require_role_read)
 ):
     """
     Obtener l Lista de secciones con permisos   
 
+    - **is_admin**: Si es True, retorna todos los permisos (sin filtrar).
+                    Si es False, solo retorna permisos que no son de super admin.
+                    Si es None, retorna todos los permisos (opcional)
     
     Returns:
         Lista de secciones con permisos
     """
-    seccions= role_service.get_all_sections_with_permissions()
+    seccions= role_service.get_all_sections_with_permissions(is_admin=is_admin)
     
     if not seccions:
             raise HTTPException(

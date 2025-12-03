@@ -18,6 +18,7 @@ class Permission(BaseModel):
     
     # Campos básicos
     name = Column(Text, nullable=False, unique=True)
+    is_super_admin = Column(Boolean, nullable=False, default=False)
     
     # Override created_at to exclude it
     created_at = None
@@ -31,4 +32,4 @@ class Permission(BaseModel):
     )
     
     def __repr__(self) -> str:
-        return f"<Permission(id={self.id}, name='{self.name}')>" 
+        return f"<Permission(id={self.id}, name='{self.name}', is_super_admin={self.is_super_admin})>" 

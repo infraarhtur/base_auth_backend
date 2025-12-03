@@ -390,11 +390,22 @@ class RoleService:
         return self.db.query(Permission).all() 
 
 
-    def get_all_sections_with_permissions(self) -> dict:
+    def get_all_sections_with_permissions(self, is_admin: Optional[bool] = None) -> dict:
         """
         Obtener todas las secciones con permisos como diccionario
+        
+        Args:
+            is_admin: Si es True, retorna todos los permisos (sin filtrar).
+                     Si es False, solo retorna permisos que no son de super admin.
+                     Si es None, retorna todos los permisos.
         """
-        seccions = self.db.query(Permission).all()
+        query = self.db.query(Permission)
+        
+        # Filtrar solo cuando is_admin es False (excluir permisos de super admin)
+        if is_admin is False:
+            query = query.filter(Permission.is_super_admin == False)
+        
+        seccions = query.all()
             
             # Convertir a diccionario usando el ID como clave
             #   sections_dict = {permission.id: {
@@ -413,7 +424,8 @@ class RoleService:
 
             sections_dict[category].append({
                 "id": str(permission.id),
-                "name": action
+                "name": action,
+                "is_super_admin": permission.is_super_admin
             })
 
         # ordenar categorías y acciones dentro de cada categoría

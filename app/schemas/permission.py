@@ -15,6 +15,7 @@ class PermissionRead(BaseSchema):
     
     id: uuid.UUID = Field(..., description="ID del registro")
     name: str = Field(..., description="Nombre del permiso")
+    is_super_admin: bool = Field(default=False, description="Indica si es un permiso de super administrador")
     
     class Config:
         from_attributes = True
