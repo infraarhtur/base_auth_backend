@@ -231,26 +231,17 @@ AS SELECT cu.company_id,
      JOIN permission p ON p.id = rp.permission_id;
 
 
+-- DROP FUNCTION public.create_company_with_user(text, text, text, bool);
 
-	--DROP FUNCTION public.create_company_with_user(text, text, text);
--- Stored Procedure para crear una empresa con un usuario
--- Crea un rol admin relacionado a la empresa y le asigna todos los permisos disponibles
-
-CREATE OR REPLACE FUNCTION create_company_with_user(
-    p_company_name TEXT,
-    p_user_name TEXT,
-    p_user_email TEXT
-)
-RETURNS TABLE(
-    out_company_id UUID,
-    out_user_id UUID,
-    out_admin_role_id UUID
-) AS $$
+CREATE OR REPLACE FUNCTION public.create_company_with_user(p_company_name text, p_user_name text, p_user_email text, p_is_super_admin boolean DEFAULT false)
+ RETURNS TABLE(out_company_id uuid, out_user_id uuid, out_admin_role_id uuid)
+ LANGUAGE plpgsql
+AS $function$
 DECLARE
-    v_company_id UUID;
-    v_user_id UUID;
-    v_admin_role_id UUID;
-    v_default_password TEXT := '$2b$12$TvsnnETjWySbme734iV00u7YmZul14Af1.crhsJXoq9OrXvVWOnXa';
+    v_company_id        UUID;
+    v_user_id           UUID;
+    v_admin_role_id     UUID;
+    v_default_password  TEXT := '$2b$12$TvsnnETjWySbme734iV00u7YmZul14Af1.crhsJXoq9OrXvVWOnXa';
     v_permission_record RECORD;
 BEGIN
     -- Verificar que el email no existe
@@ -282,12 +273,14 @@ BEGIN
     VALUES (v_company_id, 'admin')
     RETURNING id INTO v_admin_role_id;
 
-    -- Relacionar el rol admin a TODOS los permisos
-    -- excepto los que contengan 'company:' en el campo name
+    -- Relacionar el rol admin a los permisos:
+    --  - Si p_is_super_admin = FALSE  → solo permisos donde is_super_admin = FALSE
+    --  - Si p_is_super_admin = TRUE   → todos los permisos
     FOR v_permission_record IN
         SELECT id AS permission_id
         FROM "permission"
-        WHERE name NOT LIKE '%company:%'
+        WHERE p_is_super_admin
+           OR is_super_admin = FALSE
     LOOP
         INSERT INTO role_permission (role_id, permission_id)
         VALUES (v_admin_role_id, v_permission_record.permission_id)
@@ -306,7 +299,16 @@ BEGIN
             v_user_id       AS out_user_id,
             v_admin_role_id AS out_admin_role_id;
 END;
-$$ LANGUAGE plpgsql;
+$function$
+;
 
--- Ejemplo de uso:
---SELECT * FROM create_company_with_user('Mi Empresa de prueba', 'Usuario prueba inventario', 'usuario.inventario@yopmail.com');
+-- Permissions
+
+ALTER FUNCTION public.create_company_with_user(text, text, text, bool) OWNER TO postgres;
+GRANT ALL ON FUNCTION public.create_company_with_user(text, text, text, bool) TO postgres;
+-- Ejemplos de uso:
+-- Admin normal (no super admin, por defecto solo permisos is_super_admin = FALSE)
+-- SELECT * FROM create_company_with_user('Mi Empresa', 'Usuario normal', 'usuario.normal@yopmail.com');
+
+-- Admin super (relaciona TODOS los permisos, incluyendo is_super_admin = TRUE)
+-- SELECT * FROM create_company_with_user('Mi Empresa SA', 'Usuario super', 'usuario.super@yopmail.com', TRUE);
