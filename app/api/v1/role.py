@@ -114,15 +114,13 @@ async def get_all_sections_with_permissions(
     Returns:
         Lista de secciones con permisos
     """
-    seccions= role_service.get_all_sections_with_permissions(is_admin=is_admin)
-    
-    if not seccions:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="El usuario no tiene asignado este rol"
-            )
-    
-    return SuccessResponse(message="Secciones con permisos obtenidas correctamente", data=seccions)
+    if is_admin is not True:    
+        is_admin = False
+    seccions = role_service.get_all_sections_with_permissions(is_admin=is_admin)
+    return SuccessResponse(
+        message="Secciones con permisos obtenidas correctamente",
+        data=seccions
+    )
 
 
 @router.get("/{role_id}", response_model=RoleRead, summary="Obtener rol")
