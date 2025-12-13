@@ -13,7 +13,8 @@ from app.api.deps import (
     require_company_read,
     require_company_create,
     require_company_update,
-    require_company_delete
+    require_company_delete,
+    require_user_read
 )
 from app.schemas.company import (
     CompanyCreate, 
@@ -240,7 +241,7 @@ async def remove_user_from_company(
 async def get_company_users(
     company_id: str,
     company_service = Depends(get_company_service),
-    _: bool = Depends(require_company_read)
+    _: bool = Depends(require_user_read)
 ):
     """
     Obtener usuarios de una empresa
